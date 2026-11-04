@@ -1,3 +1,40 @@
-# f1-stats
+# F1 Stats packaging
 
-Packaging and release pipeline for the F1 Stats image built from [viniciusmelchior/f1_2022](https://github.com/viniciusmelchior/f1_2022).
+Public container packaging and releases for [viniciusmelchior/f1_2022](https://github.com/viniciusmelchior/f1_2022). The application stays upstream; this repository owns the Docker image and release workflow.
+
+The image runs PHP-FPM and nginx as an unprivileged user on port 8080. Builds target native `linux/arm64`, pin base-image digests and verify both the upstream commit and packaging revision. Every CI job uses GitHub-hosted `ubuntu-24.04-arm`.
+
+## Release flow
+
+[The release workflow](.github/workflows/f1-stats-image.yml) compares upstream `main` and the latest commit under `images/f1-stats/` with the deployed revisions. Automatic polls run only when `F1_STATS_AUTO_DEPLOY` is `true`; manual dispatch from `main` can build without publication or request publication and deployment.
+
+1. Build and smoke-test upstream code without release secrets, then rehearse migrations against a throwaway MySQL database.
+2. Pass the image archive to a separate publishing job, checking its SHA-256, image ID, architecture and source revision before registry login.
+3. Publish an unused `<upstream sha7>-<packaging sha7>` tag and verify its image-index digest. Existing tags are never overwritten; a manual rebuild can supply a suffix.
+4. Promote the digest through a reviewed GitOps change, wait for public health checks, and post `daybreaker/f1-stats-release` on the upstream commit.
+
+The upstream commit status links to this public repository's run. A failed release opens a failure issue; a new commit or explicit manual retry starts another attempt. Promotion updates GitOps before live verification, so a verification failure can leave the new digest deployed. There is no automatic rollback, and database migrations can prevent restoring an older application image.
+
+## Configuration
+
+All secrets belong in the `release` environment, restricted to `main`. Only the resolve, publish, promote and report jobs reference it. The build job runs upstream code without these secrets; PR checks run tests and linters only.
+
+| Kind | Names |
+| --- | --- |
+| Environment secrets | `OCIR_AUTH_TOKEN`, `F1_DEPLOY_APP_ID`, `F1_DEPLOY_APP_PRIVATE_KEY`, `F1_STATUS_APP_ID`, `F1_STATUS_APP_PRIVATE_KEY`, `LINEAR_API_KEY` |
+| Repository variables | `OCIR_USERNAME`, `F1_STATS_AUTO_DEPLOY` |
+| Optional upstream overrides | `F1_STATS_UPSTREAM_OWNER`, `F1_STATS_UPSTREAM_NAME` |
+
+The registry credential is dedicated to the F1 Stats image. The deploy App has access to the GitOps target; the status App has access to the upstream repository. The dispatch App needs Actions access to this repository. Infrastructure owners manage repository settings, environment policy, App installations and credential custody separately.
+
+## Checks
+
+```sh
+python3 -m unittest discover -s scripts/tests
+actionlint
+GH_TOKEN=<read-only-token> zizmor --persona=regular .
+```
+
+CI installs checksum-verified actionlint 1.7.12 and zizmor 1.30.1 and reports the required `check` job for pull requests and `main`. These tests exercise release decisions, immutable publication, promotion guards and commit status links without cloud credentials. The real build, registry publication and live deployment run through the release workflow.
+
+Use a [Linear work item](https://linear.app/daybreaker-labs) in pull requests. Keep private operations and credentials in their owning systems; review workflow output before making it public.
