@@ -1,0 +1,457 @@
+name: f1-stats image
+
+# Releases the upstream F1 Stats application to the arm64 OKE workers: a schedule
+# compares upstream main and images/f1-stats with what daybreaker-gitops pins,
+# then builds, publishes, promotes and verifies. Comparing state rather than
+# reacting to push events means no credential lives in the upstream repository,
+# and a queued run replaced under the concurrency group cannot lose a change.
+# Set the repository variable F1_STATS_AUTO_DEPLOY to anything but "true" to stop
+# scheduled releases; a manual dispatch still works. GitHub delivers the schedule
+# hours late, so a CronJob in OKE (daybreaker-gitops components/f1-stats-dispatch)
+# dispatches with auto every 15 minutes. An auto run takes the same path as a
+# scheduled one, and the cron stays as a backup.
+#
+# The build job runs third-party code (composer scripts, the smoke and migration
+# containers) and never sees a credential; the publish job alone logs in to OCIR
+# and handles the image as an opaque archive; only jobs that never check out or
+# run that code hold an App token. The archive moves between the jobs through
+# the Actions cache under a key unique to this run attempt, and the publish job
+# refuses it unless its SHA-256 matches the build job's output.
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+    inputs:
+      auto:
+        description: Decide as a scheduled poll does; takes no other input
+        type: boolean
+        default: false
+      upstream_sha:
+        description: Full 40-character commit on upstream main to package; empty uses upstream main
+        type: string
+        default: ''
+      tag_suffix:
+        description: Optional suffix (e.g. "-2") when the same commit and packaging must be rebuilt; tags are never overwritten
+        type: string
+        default: ''
+      publish:
+        description: Publish the F1 Stats image (main only)
+        type: boolean
+        default: false
+      deploy:
+        description: Also promote and verify the published image (needs publish)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: f1-stats-image
+  cancel-in-progress: false
+
+env:
+  OCIR_REGISTRY: fra.ocir.io
+  UPSTREAM_REPO: ${{ vars.F1_STATS_UPSTREAM_OWNER || 'viniciusmelchior' }}/${{ vars.F1_STATS_UPSTREAM_NAME || 'f1_2022' }}
+  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  resolve:
+    environment: release
+    if: (github.event_name == 'workflow_dispatch' && !inputs.auto) || vars.F1_STATS_AUTO_DEPLOY == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+      publish: ${{ steps.decide.outputs.publish }}
+      deploy: ${{ steps.decide.outputs.deploy }}
+      upstream_sha: ${{ steps.decide.outputs.upstream_sha }}
+      packaging_sha: ${{ steps.decide.outputs.packaging_sha }}
+      tag: ${{ steps.decide.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.15.2'
+      - name: Read the deployed release
+        id: gitops-token
+        if: github.event_name == 'schedule' || inputs.auto
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.F1_DEPLOY_APP_ID }}
+          private-key: ${{ secrets.F1_DEPLOY_APP_PRIVATE_KEY }}
+          owner: daybreaker-labs
+          repositories: daybreaker-gitops
+          permission-contents: read
+      - name: Decide what this run does
+        id: decide
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITOPS_TOKEN: ${{ steps.gitops-token.outputs.token }}
+          AUTO_DEPLOY: ${{ vars.F1_STATS_AUTO_DEPLOY }}
+          INPUT_AUTO: ${{ inputs.auto }}
+          INPUT_UPSTREAM_SHA: ${{ inputs.upstream_sha }}
+          INPUT_TAG_SUFFIX: ${{ inputs.tag_suffix }}
+          INPUT_PUBLISH: ${{ inputs.publish }}
+          INPUT_DEPLOY: ${{ inputs.deploy }}
+        run: python3 scripts/f1_stats_release.py resolve
+      - name: Mint the status token
+        id: status-token
+        if: steps.decide.outputs.deploy == 'true'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.F1_STATUS_APP_ID }}
+          private-key: ${{ secrets.F1_STATUS_APP_PRIVATE_KEY }}
+          owner: ${{ vars.F1_STATS_UPSTREAM_OWNER || 'viniciusmelchior' }}
+          repositories: ${{ vars.F1_STATS_UPSTREAM_NAME || 'f1_2022' }}
+          permission-statuses: write
+      # Recorded before the build, so the next poll does not start the same
+      # release again whatever happens to this one.
+      - name: Mark the commit as releasing
+        if: steps.decide.outputs.deploy == 'true'
+        env:
+          STATUS_TOKEN: ${{ steps.status-token.outputs.token }}
+          STATE: pending
+          UPSTREAM_SHA: ${{ steps.decide.outputs.upstream_sha }}
+          PACKAGING_SHA: ${{ steps.decide.outputs.packaging_sha }}
+        run: python3 scripts/f1_stats_release.py status
+
+  build:
+    needs: resolve
+    if: needs.resolve.outputs.run == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    outputs:
+      archive_sha256: ${{ steps.save.outputs.archive_sha256 }}
+      image_id: ${{ steps.save.outputs.image_id }}
+    steps:
+      - name: Require native ARM
+        run: test "$(uname -m)" = aarch64
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: stack
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.UPSTREAM_REPO }}
+          ref: ${{ needs.resolve.outputs.upstream_sha }}
+          persist-credentials: false
+          path: upstream
+
+      - name: Verify upstream commit
+        env:
+          UPSTREAM_SHA: ${{ needs.resolve.outputs.upstream_sha }}
+        run: test "$(git -C upstream rev-parse HEAD)" = "$UPSTREAM_SHA"
+
+      - name: Build and smoke without publication
+        env:
+          UPSTREAM_SHA: ${{ needs.resolve.outputs.upstream_sha }}
+          PACKAGING_SHA: ${{ needs.resolve.outputs.packaging_sha }}
+        run: |
+          docker buildx build --platform linux/arm64 --load --provenance=false \
+            --build-context app=upstream --build-arg UPSTREAM_SHA="$UPSTREAM_SHA" \
+            --build-arg PACKAGING_SHA="$PACKAGING_SHA" --build-arg UPSTREAM_REPO="$UPSTREAM_REPO" \
+            -t f1-stats:qualification stack/images/f1-stats
+          test "$(docker image inspect f1-stats:qualification --format '{{.Architecture}}')" = arm64
+          # A throwaway key: the health page and the login form need neither a
+          # real key nor a database. Probes run inside the container so they
+          # do not depend on where a remote Docker daemon publishes ports.
+          key="base64:$(openssl rand -base64 32)"
+          docker run -d --name f1-stats-smoke \
+            -e APP_KEY="$key" -e APP_ENV=production -e APP_DEBUG=false \
+            f1-stats:qualification
+          ok=0
+          for _ in $(seq 1 30); do
+            if docker exec f1-stats-smoke curl -fsS http://127.0.0.1:8080/healthz > /dev/null 2>&1; then ok=1; break; fi
+            sleep 2
+          done
+          status=$(docker exec f1-stats-smoke curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/users/login || true)
+          revision=$(docker exec f1-stats-smoke curl -sI http://127.0.0.1:8080/healthz | tr -d '\r' | sed -n 's/^[Xx]-[Ff]1-[Rr]evision: //p' || true)
+          docker logs f1-stats-smoke
+          docker rm -f f1-stats-smoke > /dev/null
+          test "$ok" = 1
+          test "$status" = 200
+          test "$revision" = "$UPSTREAM_SHA"
+          docker image inspect f1-stats:qualification --format '{{.Size}}'
+          docker run --rm --entrypoint php f1-stats:qualification -m
+
+      # Replays every migration from an empty schema on the DB system's MySQL
+      # version, as an ordinary user like production's, on a network with no way
+      # out. It cannot catch a failure that depends on production data.
+      - name: Rehearse migrations on a throwaway database
+        run: |
+          cleanup() {
+            docker rm -fv f1-stats-rehearsal-db > /dev/null 2>&1 || true
+            docker network rm f1-stats-rehearsal > /dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          password=$(openssl rand -hex 24)
+          docker network create --internal f1-stats-rehearsal > /dev/null
+          docker run -d --name f1-stats-rehearsal-db --network f1-stats-rehearsal \
+            -e MYSQL_RANDOM_ROOT_PASSWORD=yes -e MYSQL_DATABASE=f1_2022 \
+            -e MYSQL_USER=f1_stats -e MYSQL_PASSWORD="$password" \
+            docker.io/library/mysql:26.10.0@sha256:7b16ec7caa94ca7e92f4c5ec287de69d2e8738db056ceb629022951a6f6d910b > /dev/null
+          ready=0
+          for _ in $(seq 1 60); do
+            if docker exec -e MYSQL_PWD="$password" f1-stats-rehearsal-db \
+              mysql --protocol=tcp -h 127.0.0.1 -u f1_stats -e 'SELECT 1' f1_2022 > /dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            sleep 3
+          done
+          test "$ready" = 1
+          artisan() {
+            docker run --rm --network f1-stats-rehearsal \
+              -e APP_KEY="base64:$(openssl rand -base64 32)" -e APP_ENV=production -e APP_DEBUG=false \
+              -e DB_CONNECTION=mysql -e DB_HOST=f1-stats-rehearsal-db -e DB_DATABASE=f1_2022 \
+              -e DB_USERNAME=f1_stats -e DB_PASSWORD="$password" \
+              f1-stats:qualification php artisan "$@"
+          }
+          artisan migrate --force
+          artisan migrate:status | tee migrate-status.txt
+          ! grep -q Pending migrate-status.txt
+
+      - name: Save image for publication
+        id: save
+        if: needs.resolve.outputs.publish == 'true'
+        run: |
+          mkdir f1-stats-image
+          docker save f1-stats:qualification | gzip > f1-stats-image/image.tar.gz
+          echo "archive_sha256=$(sha256sum f1-stats-image/image.tar.gz | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "image_id=$(docker image inspect f1-stats:qualification --format '{{.Id}}')" >> "$GITHUB_OUTPUT"
+
+      # The relative path keeps the cache version identical on runners whose
+      # temporary directories differ.
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: needs.resolve.outputs.publish == 'true'
+        with:
+          path: f1-stats-image/image.tar.gz
+          key: f1-stats-image-${{ github.run_id }}-${{ github.run_attempt }}
+
+  publish:
+    environment: release
+    if: >-
+      needs.resolve.outputs.publish == 'true' && github.ref == 'refs/heads/main' &&
+      github.repository == 'daybreaker-labs/f1-stats'
+    needs: [resolve, build]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    outputs:
+      digest: ${{ steps.publish.outputs.digest }}
+    env:
+      TAG: ${{ needs.resolve.outputs.tag }}
+      UPSTREAM_SHA: ${{ needs.resolve.outputs.upstream_sha }}
+      ARCHIVE_SHA256: ${{ needs.build.outputs.archive_sha256 }}
+      IMAGE_ID: ${{ needs.build.outputs.image_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Mask registry account in command output
+        run: |
+          image=$(PYTHONPATH=scripts python3 -c 'from f1_stats_release import REGISTRY_IMAGE; print(REGISTRY_IMAGE)')
+          registry_path="${image#*/}"
+          echo "::add-mask::${registry_path%%/*}"
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: f1-stats-image/image.tar.gz
+          key: f1-stats-image-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+
+      - name: Load and verify the image before credentials
+        run: |
+          command -v jq > /dev/null || { echo 'jq is required on this runner' >&2; exit 1; }
+          [[ "$ARCHIVE_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          echo "$ARCHIVE_SHA256  f1-stats-image/image.tar.gz" | sha256sum -c -
+          gunzip -c f1-stats-image/image.tar.gz | docker load
+          rm -rf f1-stats-image
+          test "$(docker image inspect f1-stats:qualification --format '{{.Id}}')" = "$IMAGE_ID"
+          test "$(docker image inspect f1-stats:qualification --format '{{.Architecture}}')" = arm64
+          revision=$(docker image inspect f1-stats:qualification \
+            --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')
+          test "$revision" = "$UPSTREAM_SHA"
+
+      - name: Prepare job-scoped Docker config
+        run: |
+          # Keeps the registry credential off the shared runner home.
+          source_config="${DOCKER_CONFIG:-$HOME/.docker}"
+          DOCKER_CONFIG="$RUNNER_TEMP/docker-config"
+          install -d -m 700 "$DOCKER_CONFIG"
+          echo "DOCKER_CONFIG=$DOCKER_CONFIG" >> "$GITHUB_ENV"
+          export DOCKER_CONFIG
+          if ! docker buildx version > /dev/null 2>&1 && [ -x "$source_config/cli-plugins/docker-buildx" ]; then
+            install -d -m 700 "$DOCKER_CONFIG/cli-plugins"
+            ln -s "$source_config/cli-plugins/docker-buildx" "$DOCKER_CONFIG/cli-plugins/docker-buildx"
+          fi
+          docker buildx version
+
+      - name: Log in to OCIR
+        env:
+          OCIR_USERNAME: ${{ vars.OCIR_USERNAME }}
+          OCIR_AUTH_TOKEN: ${{ secrets.OCIR_AUTH_TOKEN }}
+        run: |
+          : "${DOCKER_CONFIG:?job-scoped Docker config was not prepared}"
+          test -n "$OCIR_USERNAME"
+          echo "::add-mask::$OCIR_USERNAME"
+          printf '%s' "$OCIR_AUTH_TOKEN" | docker login "$OCIR_REGISTRY" --username "$OCIR_USERNAME" --password-stdin
+
+      - name: Publish an unused tag and verify the index
+        id: publish
+        run: |
+          tag_state() {
+            local out
+            if out=$(docker buildx imagetools inspect "$1" 2>&1); then
+              echo exists
+            elif grep -Eqi 'not found|manifest unknown|name[ _]unknown' <<< "$out"; then
+              echo free
+            else
+              echo "Could not determine whether the release tag exists:" >&2
+              echo "$out" >&2
+              return 1
+            fi
+          }
+          for ref in "$IMAGE:$TAG" "$IMAGE:$TAG-arm64"; do
+            state=$(tag_state "$ref")
+            if [ "$state" = exists ]; then
+              echo "Release tag already exists. Tags are never overwritten; rerun with a tag_suffix." >&2
+              exit 1
+            fi
+          done
+
+          docker tag f1-stats:qualification "$IMAGE:$TAG-arm64"
+          docker push "$IMAGE:$TAG-arm64"
+          arm_digest=$(docker buildx imagetools inspect "$IMAGE:$TAG-arm64" --format '{{json .Manifest}}' | jq -er '.digest')
+          [[ "$arm_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          docker buildx imagetools create -t "$IMAGE:$TAG" "$IMAGE:$TAG-arm64"
+
+          media_type=$(docker buildx imagetools inspect "$IMAGE:$TAG" --format '{{json .Manifest}}' | jq -er '.mediaType')
+          raw=$(docker buildx imagetools inspect "$IMAGE:$TAG" --raw)
+          case "$media_type" in
+            application/vnd.oci.image.index.v1+json|application/vnd.docker.distribution.manifest.list.v2+json) ;;
+            *) echo "Published media type is $media_type; an image index is required" >&2; exit 1 ;;
+          esac
+          jq -e --arg digest "$arm_digest" \
+            '(.manifests | length) == 1
+              and .manifests[0].platform.os == "linux"
+              and .manifests[0].platform.architecture == "arm64"
+              and .manifests[0].digest == $digest' <<< "$raw" > /dev/null
+
+          digest=$(docker buildx imagetools inspect "$IMAGE:$TAG" --format '{{json .Manifest}}' | jq -er '.digest')
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          {
+            echo '# f1-stats publication'
+            echo
+            echo "- Upstream commit: \`$UPSTREAM_SHA\`"
+            echo "- Tag: \`$TAG\`"
+            echo "- Index digest: \`$digest\`"
+            echo "- Platforms: \`linux/arm64\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "- arm64 manifest digest: \`$arm_digest\`" >> "$GITHUB_STEP_SUMMARY"
+          # Logged rather than uploaded, so the record does not depend on
+          # artifact storage after the push has already happened.
+          jq -n --arg tag "$TAG" --arg digest "$digest" \
+            --arg upstream "$UPSTREAM_SHA" --arg arm "$arm_digest" \
+            '{tag: $tag, index_digest: $digest, arm64_digest: $arm, upstream_sha: $upstream}'
+
+      - name: Remove OCIR credentials
+        if: always()
+        run: |
+          docker logout "$OCIR_REGISTRY" || true
+          rm -f "$RUNNER_TEMP/docker-config/config.json"
+
+  promote:
+    environment: release
+    needs: [resolve, publish]
+    if: needs.resolve.outputs.deploy == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.15.2'
+      - id: gitops-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.F1_DEPLOY_APP_ID }}
+          private-key: ${{ secrets.F1_DEPLOY_APP_PRIVATE_KEY }}
+          owner: daybreaker-labs
+          repositories: daybreaker-gitops
+          permission-contents: write
+          permission-pull-requests: write
+          permission-checks: read
+      - name: Pin the digest in daybreaker-gitops
+        env:
+          GITOPS_TOKEN: ${{ steps.gitops-token.outputs.token }}
+          DIGEST: ${{ needs.publish.outputs.digest }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          UPSTREAM_SHA: ${{ needs.resolve.outputs.upstream_sha }}
+          PACKAGING_SHA: ${{ needs.resolve.outputs.packaging_sha }}
+        run: python3 scripts/f1_stats_release.py promote
+
+  verify:
+    needs: [resolve, promote]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.15.2'
+      - name: Wait for the public hostname to serve this release
+        env:
+          UPSTREAM_SHA: ${{ needs.resolve.outputs.upstream_sha }}
+          PACKAGING_SHA: ${{ needs.resolve.outputs.packaging_sha }}
+        run: python3 scripts/f1_stats_release.py verify
+
+  report:
+    environment: release
+    needs: [resolve, build, publish, promote, verify]
+    if: always() && needs.resolve.outputs.deploy == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    env:
+      UPSTREAM_SHA: ${{ needs.resolve.outputs.upstream_sha }}
+      PACKAGING_SHA: ${{ needs.resolve.outputs.packaging_sha }}
+      STATE: ${{ needs.verify.result == 'success' && 'success' || 'failure' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.15.2'
+      - id: status-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.F1_STATUS_APP_ID }}
+          private-key: ${{ secrets.F1_STATUS_APP_PRIVATE_KEY }}
+          owner: ${{ vars.F1_STATS_UPSTREAM_OWNER || 'viniciusmelchior' }}
+          repositories: ${{ vars.F1_STATS_UPSTREAM_NAME || 'f1_2022' }}
+          permission-statuses: write
+      - name: Post the commit status
+        env:
+          STATUS_TOKEN: ${{ steps.status-token.outputs.token }}
+        run: python3 scripts/f1_stats_release.py status
+      - name: Open a Linear issue
+        if: always() && env.STATE == 'failure'
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ddbad426-275e-440a-ac9d-d046605843a8
+          LINEAR_PROJECT_ID: 3e2b939b-5ce6-443e-b3ea-77a8ec37ee4a
+          LINEAR_LABEL_ID: cf3a31e7-b814-4b0c-bd37-21b9a74c949d
+          FAILED_JOBS: >-
+            build=${{ needs.build.result }} publish=${{ needs.publish.result }}
+            promote=${{ needs.promote.result }} verify=${{ needs.verify.result }}
+        run: python3 scripts/f1_stats_release.py linear
