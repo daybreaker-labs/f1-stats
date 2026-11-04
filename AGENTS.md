@@ -12,4 +12,4 @@ Track Daybreaker work in Linear. Before creating, planning, implementing or comp
 
 ## Checks and release boundaries
 
-Run the checks in README.md. Keep the upstream build free of release secrets and every job on GitHub-hosted ubuntu-24.04-arm. Credential-bearing jobs use the main-only release environment. Preserve archive verification, unused-tag checks, source ancestry checks and the promotion allowlist. Check public logs for private URLs and registry-account output. Use Conventional Commits and pull requests; cloud credentials and live repository settings remain owner operations.
+Run the checks in README.md. Keep the upstream build free of release secrets on blacksmith-4vcpu-ubuntu-2404-arm; all other jobs use GitHub-hosted ubuntu-24.04-arm. Credential-bearing jobs use the main-only release environment. Preserve archive verification, unused-tag checks, source ancestry checks and the promotion allowlist. Check public logs for private URLs and registry-account output. Use Conventional Commits and pull requests; cloud credentials and live repository settings remain owner operations.
