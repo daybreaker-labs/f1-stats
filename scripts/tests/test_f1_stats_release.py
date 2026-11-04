@@ -377,44 +377,91 @@ class RewriteManifest(unittest.TestCase):
                 release.check_only_pins_changed(MIGRATE, changed)
 
 
-class CheckResults(unittest.TestCase):
-    def run_(self, id_, name, status="completed", conclusion="success"):
-        return {"id": id_, "name": name, "status": status, "conclusion": conclusion}
+class WaitForPromotion(unittest.TestCase):
+    def wait(self, pulls, clock=(0, 1)):
+        with (
+            mock.patch.object(release, "github", side_effect=pulls) as github,
+            mock.patch.object(release.time, "monotonic", side_effect=clock),
+            mock.patch.object(release.time, "sleep") as sleep,
+        ):
+            release.wait_for_promotion(42, UP, "deploy-token")
+        for call in github.call_args_list:
+            self.assertEqual(call.args, (f"repos/{release.GITOPS_REPO}/pulls/42", "deploy-token"))
+        return sleep.call_count
 
-    def test_waits_for_checks_not_yet_reported(self):
-        self.assertEqual(release.check_results([self.run_(1, "zizmor")]), "pending")
+    def pull(self, **changes):
+        return {"head": {"sha": UP}, "merged": False, "state": "open", **changes}
 
-    def test_waits_for_other_running_checks(self):
-        runs = [
-            self.run_(1, "zizmor"),
-            self.run_(2, "root-render"),
-            self.run_(3, "actionlint", "in_progress", None),
-        ]
-        self.assertEqual(release.check_results(runs), "pending")
+    def test_waits_for_the_trusted_merger_without_writing(self):
+        self.assertEqual(self.wait([self.pull(), self.pull(merged=True, state="closed")]), 1)
 
-    def test_all_passed(self):
-        runs = [self.run_(1, "zizmor"), self.run_(2, "root-render")]
-        self.assertEqual(release.check_results(runs), "success")
+    def test_changed_head_fails_even_if_merged(self):
+        with self.assertRaisesRegex(release.ReleaseError, "branch changed"):
+            self.wait([self.pull(head={"sha": PKG}, merged=True)])
 
-    def test_any_failure_fails(self):
-        runs = [self.run_(1, "zizmor"), self.run_(2, "actionlint", conclusion="failure")]
-        self.assertEqual(release.check_results(runs), "failure")
+    def test_closed_unmerged_pr_fails(self):
+        with self.assertRaisesRegex(release.ReleaseError, "without merging"):
+            self.wait([self.pull(state="closed")])
 
-    def test_rerun_replaces_an_earlier_failure(self):
-        runs = [
-            self.run_(1, "zizmor", conclusion="failure"),
-            self.run_(2, "zizmor"),
-            self.run_(3, "root-render"),
-        ]
-        self.assertEqual(release.check_results(runs), "success")
+    def test_wait_is_bounded(self):
+        with self.assertRaisesRegex(release.ReleaseError, "did not finish"):
+            self.wait([self.pull()], clock=(0, 901))
 
-    def test_skipped_checks_do_not_block(self):
-        runs = [
-            self.run_(1, "zizmor"),
-            self.run_(2, "root-render"),
-            self.run_(3, "otel", conclusion="skipped"),
-        ]
-        self.assertEqual(release.check_results(runs), "success")
+    def test_api_failure_does_not_approve_promotion(self):
+        with self.assertRaisesRegex(RuntimeError, "API unavailable"):
+            self.wait([RuntimeError("API unavailable")])
+
+
+class Promote(unittest.TestCase):
+    def test_opens_reserved_branch_and_waits_without_merging_or_deleting(self):
+        calls = []
+        head, base = "5" * 40, "6" * 40
+        branch = "f1-stats-promotion/test-release"
+        responses = iter([
+            {"head": {"sha": head}, "state": "open", "merged": False},
+            {"head": {"sha": head}, "state": "closed", "merged": True},
+        ])
+
+        def github(path, token, method="GET", body=None):
+            calls.append((method, path, body))
+            self.assertEqual(token, "deploy-token")
+            prefix = f"repos/{release.GITOPS_REPO}"
+            if (method, path) == ("GET", f"{prefix}/git/ref/heads/main"):
+                return {"object": {"sha": base}}
+            if (method, path) == ("POST", f"{prefix}/git/refs"):
+                self.assertEqual(body, {"ref": f"refs/heads/{branch}", "sha": base})
+                return {}
+            if method == "PUT" and path in [f"{prefix}/contents/{p}" for p in release.EXPECTED_IMAGE_PINS]:
+                self.assertEqual(body["branch"], branch)
+                return {}
+            if (method, path) == ("GET", f"{prefix}/compare/{base}...{branch}"):
+                return {"files": [{"filename": p} for p in release.EXPECTED_IMAGE_PINS]}
+            if (method, path) == ("GET", f"{prefix}/git/ref/heads/{branch}"):
+                return {"object": {"sha": head}}
+            if (method, path) == ("POST", f"{prefix}/pulls"):
+                self.assertEqual((body["head"], body["base"]), (branch, "main"))
+                return {"number": 42, "html_url": "https://example.test/pull/42"}
+            if (method, path) == ("GET", f"{prefix}/pulls/42"):
+                return next(responses)
+            raise AssertionError(f"Unexpected promotion API request: {method} {path}")
+
+        values = {
+            "GITOPS_TOKEN": "deploy-token", "DIGEST": NEW, "TAG": "test-release",
+            "UPSTREAM_SHA": UP, "PACKAGING_SHA": PKG, "UPSTREAM_REPO": "up/repo",
+            "GITHUB_REPOSITORY": "daybreaker-labs/f1-stats", "RUN_URL": "https://example.test/run",
+        }
+        with (
+            mock.patch.dict(os.environ, values, clear=True),
+            mock.patch.object(release, "github", side_effect=github),
+            mock.patch.object(release, "fetch_file", side_effect=[(DEPLOYMENT, "blob1"), (MIGRATE, "blob2")]),
+            mock.patch.object(release, "write_outputs") as outputs,
+            mock.patch.object(release.time, "monotonic", side_effect=[0, 1]),
+            mock.patch.object(release.time, "sleep") as sleep,
+        ):
+            release.promote()
+        self.assertEqual(len(calls), 9)
+        sleep.assert_called_once_with(15)
+        outputs.assert_called_once_with(pull_url="https://example.test/pull/42")
 
 
 class PublicOutput(unittest.TestCase):

@@ -33,7 +33,6 @@ DEPLOYMENT_PATH = "components/f1-stats/base/deployment.yaml"
 MIGRATE_PATH = "components/f1-stats/base/migrate-job.yaml"
 # Where each manifest pins the image, so an unexpected layout stops the release.
 EXPECTED_IMAGE_PINS = {DEPLOYMENT_PATH: 2, MIGRATE_PATH: 1}
-REQUIRED_GITOPS_CHECKS = ("root-render", "zizmor")
 
 STATUS_CONTEXT = "daybreaker/f1-stats-release"
 UPSTREAM_ANNOTATION = "daybreaker.cloud/upstream-sha"
@@ -181,24 +180,20 @@ def check_only_pins_changed(old: str, new: str) -> None:
         raise ReleaseError("a release may only change image pins and release annotations")
 
 
-def check_results(runs: list[dict[str, Any]]) -> str:
-    """Reduce a commit's check runs to success, pending or failure.
-
-    Auto-merge would only wait for ruleset-required checks, so this waits for
-    them all.
-    """
-    newest: dict[str, dict[str, Any]] = {}
-    for run in sorted(runs, key=lambda r: r["id"]):
-        newest[run["name"]] = run
-    bad = {"failure", "cancelled", "timed_out", "action_required", "startup_failure"}
-    if any(run.get("conclusion") in bad for run in newest.values()):
-        return "failure"
-    for name in REQUIRED_GITOPS_CHECKS:
-        if name not in newest:
-            return "pending"
-    if any(run["status"] != "completed" for run in newest.values()):
-        return "pending"
-    return "success"
+def wait_for_promotion(number: int, head: str, token: str) -> None:
+    """The private GitOps merger checks and merges the exact promotion head."""
+    deadline = time.monotonic() + int(env("CHECK_TIMEOUT_SECONDS", "900"))
+    while True:
+        pull = github(f"repos/{GITOPS_REPO}/pulls/{number}", token)
+        if pull["head"]["sha"] != head:
+            raise ReleaseError("promotion branch changed while waiting for merge")
+        if pull["merged"]:
+            return
+        if pull["state"] != "open":
+            raise ReleaseError("promotion pull request closed without merging")
+        if time.monotonic() > deadline:
+            raise ReleaseError("trusted GitOps merger did not finish")
+        time.sleep(15)
 
 
 def request(
@@ -321,7 +316,7 @@ def promote() -> None:
     token = env("GITOPS_TOKEN")
     digest, tag = env("DIGEST"), env("TAG")
     upstream_sha, packaging_sha = env("UPSTREAM_SHA"), env("PACKAGING_SHA")
-    branch = f"f1-stats-release/{tag}"
+    branch = f"f1-stats-promotion/{tag}"
     base = github(f"repos/{GITOPS_REPO}/git/ref/heads/main", token)["object"]["sha"]
     github(
         f"repos/{GITOPS_REPO}/git/refs",
@@ -366,25 +361,7 @@ def promote() -> None:
     )
     number = pull["number"]
     print("opened promotion pull request")
-    deadline = time.monotonic() + int(env("CHECK_TIMEOUT_SECONDS", "900"))
-    while True:
-        runs = github(f"repos/{GITOPS_REPO}/commits/{head}/check-runs?per_page=100", token)["check_runs"]
-        state = check_results(runs)
-        if state == "success":
-            break
-        if state == "failure":
-            raise ReleaseError("promotion checks failed")
-        if time.monotonic() > deadline:
-            raise ReleaseError("promotion checks did not finish")
-        time.sleep(15)
-    # sha makes the merge fail if the branch moved after the checks ran.
-    github(
-        f"repos/{GITOPS_REPO}/pulls/{number}/merge",
-        token,
-        "PUT",
-        {"merge_method": "squash", "sha": head},
-    )
-    github(f"repos/{GITOPS_REPO}/git/refs/heads/{branch}", token, "DELETE")
+    wait_for_promotion(number, head, token)
     print("merged promotion pull request")
     write_outputs(pull_url=pull["html_url"])
 

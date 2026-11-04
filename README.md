@@ -25,7 +25,18 @@ All secrets belong in the `release` environment, restricted to `main`. Only the 
 | Repository variables | `OCIR_USERNAME`, `F1_STATS_AUTO_DEPLOY` |
 | Optional upstream overrides | `F1_STATS_UPSTREAM_OWNER`, `F1_STATS_UPSTREAM_NAME` |
 
-The registry credential is dedicated to the F1 Stats image. The deploy App has access to the GitOps target; the status App has access to the upstream repository. The dispatch App needs Actions access to this repository. Infrastructure owners manage repository settings, environment policy, App installations and credential custody separately.
+The registry credential is dedicated to the F1 Stats image. The dedicated
+`daybreaker-f1-stats-deploy` App (ID `5611521`) uses the unchanged `F1_DEPLOY_APP_*`
+secret names. GitOps restricts its branch writes to `f1-stats-promotion/**` and
+requires promotions to stay under `components/f1-stats/`. The public release
+opens the PR and waits up to 15 minutes for the private GitOps merger; it cannot
+write `main` or merge the PR itself. That merger uses the shared deploy App from
+a main-only GitOps environment, rechecks the exact head, paths and CI, and
+merges. GitOps removes merged branches automatically; the release verifies public health.
+
+The status App has access to the upstream repository. The dispatch App needs
+Actions access to this repository. Infrastructure owners manage repository
+settings, environment policy, App installations and credential custody separately.
 
 ## Checks
 
