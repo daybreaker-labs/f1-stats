@@ -15,7 +15,7 @@ name: f1-stats image
 # containers) and never sees a credential; the publish job alone logs in to OCIR
 # and handles the image as an opaque archive; only jobs that never check out or
 # run that code hold an App token. The archive moves between the jobs through
-# the Actions cache under a key unique to this run attempt, and the publish job
+# a GitHub artifact with a name unique to this run attempt, and the publish job
 # refuses it unless its SHA-256 matches the build job's output.
 on:
   schedule:
@@ -121,7 +121,7 @@ jobs:
   build:
     needs: resolve
     if: needs.resolve.outputs.run == 'true'
-    runs-on: ubuntu-24.04-arm
+    runs-on: blacksmith-4vcpu-ubuntu-2404-arm
     timeout-minutes: 30
     outputs:
       archive_sha256: ${{ steps.save.outputs.archive_sha256 }}
@@ -225,13 +225,15 @@ jobs:
           echo "archive_sha256=$(sha256sum f1-stats-image/image.tar.gz | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
           echo "image_id=$(docker image inspect f1-stats:qualification --format '{{.Id}}')" >> "$GITHUB_OUTPUT"
 
-      # The relative path keeps the cache version identical on runners whose
-      # temporary directories differ.
-      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # Blacksmith and GitHub runners use different cache backends.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: needs.resolve.outputs.publish == 'true'
         with:
+          name: f1-stats-image-${{ github.run_id }}-${{ github.run_attempt }}
           path: f1-stats-image/image.tar.gz
-          key: f1-stats-image-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
 
   publish:
     environment: release
@@ -258,11 +260,10 @@ jobs:
           registry_path="${image#*/}"
           echo "::add-mask::${registry_path%%/*}"
           echo "IMAGE=$image" >> "$GITHUB_ENV"
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          path: f1-stats-image/image.tar.gz
-          key: f1-stats-image-${{ github.run_id }}-${{ github.run_attempt }}
-          fail-on-cache-miss: true
+          name: f1-stats-image-${{ github.run_id }}-${{ github.run_attempt }}
+          path: f1-stats-image
 
       - name: Load and verify the image before credentials
         run: |

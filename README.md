@@ -2,14 +2,14 @@
 
 Public container packaging and releases for [viniciusmelchior/f1_2022](https://github.com/viniciusmelchior/f1_2022). The application stays upstream; this repository owns the Docker image and release workflow.
 
-The image runs PHP-FPM and nginx as an unprivileged user on port 8080. Builds target native `linux/arm64`, pin base-image digests and verify both the upstream commit and packaging revision. Every CI job uses GitHub-hosted `ubuntu-24.04-arm`.
+The image runs PHP-FPM and nginx as an unprivileged user on port 8080. Builds target native `linux/arm64`, pin base-image digests and verify both the upstream commit and packaging revision. PR checks and release control jobs use GitHub-hosted `ubuntu-24.04-arm`. The credential-free build uses `blacksmith-4vcpu-ubuntu-2404-arm`; cold PHP builds exceed the GitHub runner timeout.
 
 ## Release flow
 
 [The release workflow](.github/workflows/f1-stats-image.yml) compares upstream `main` and the latest commit under `images/f1-stats/` with the deployed revisions. Automatic polls run only when `F1_STATS_AUTO_DEPLOY` is `true`; manual dispatch from `main` can build without publication or request publication and deployment.
 
 1. Build and smoke-test upstream code without release secrets, then rehearse migrations against a throwaway MySQL database.
-2. Pass the image archive to a separate publishing job, checking its SHA-256, image ID, architecture and source revision before registry login.
+2. Pass the image archive through a GitHub artifact retained for one day to a separate publishing job, checking its SHA-256, image ID, architecture and source revision before registry login.
 3. Publish an unused `<upstream sha7>-<packaging sha7>` tag and verify its image-index digest. Existing tags are never overwritten; a manual rebuild can supply a suffix.
 4. Promote the digest through a reviewed GitOps change, wait for public health checks, and post `daybreaker/f1-stats-release` on the upstream commit.
 
