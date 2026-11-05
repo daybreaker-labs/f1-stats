@@ -41,12 +41,6 @@ RUN rm -f /etc/apt/sources.list /etc/apt/sources.list.d/* \
     # php-fpm runs unprivileged, where these directives only produce warnings.
     && sed -i -e '/^user = /d' -e '/^group = /d' /usr/local/etc/php-fpm.d/www.conf \
     && install -d -o www-data -g www-data /tmp/nginx
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends $PHPIZE_DEPS \
-    && pecl install opentelemetry-1.4.2 \
-    && docker-php-ext-enable opentelemetry \
-    && apt-get purge -y --auto-remove $PHPIZE_DEPS \
-    && rm -rf /var/lib/apt/lists/* /tmp/pear
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY php.ini /usr/local/etc/php/conf.d/zz-f1-stats.ini
 COPY php-fpm.conf /usr/local/etc/php-fpm.d/zz-f1-stats.conf
@@ -55,7 +49,6 @@ COPY --chmod=0755 entrypoint.sh /usr/local/bin/f1-stats-entrypoint
 FROM runtime AS build
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 COPY --from=app . /src
-COPY telemetry /src/telemetry
 WORKDIR /src
 # post-autoload-dump runs artisan package:discover, which boots the application
 # and therefore needs the runtime extensions installed above.
@@ -63,10 +56,7 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN rm -rf .git .github \
     && composer install --no-dev --no-interaction --no-progress \
         --optimize-autoloader --classmap-authoritative \
-    && php telemetry/install.php \
-    && composer dump-autoload --no-dev --optimize --classmap-authoritative \
     && composer check-platform-reqs --no-dev \
-    && php -d zend.assertions=1 -d assert.exception=1 telemetry/privacy-test.php \
     && rm -f /usr/local/bin/composer
 
 FROM runtime
