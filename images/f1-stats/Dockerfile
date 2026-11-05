@@ -17,6 +17,8 @@ FROM docker.io/library/composer:2.10.2@sha256:d020706319701a44468968321dccd0fce6
 # PhpSpreadsheet 1.x that maatwebsite/excel 3.1 requires declares <8.5.
 FROM docker.io/library/php:8.4-fpm-trixie@sha256:3a6527017daca7917709afa08a37388ec108db093857f31d642cfff2e6f0449e AS runtime
 COPY apt.conf /etc/apt/apt.conf.d/80-f1-build
+# Runtime installs precede application copies so the persistent arm64 builder
+# can reuse them across upstream releases.
 # Freeze Debian package resolution as well as the base image. The snapshot is
 # the one the base image was built from: an older one fails on packages the base
 # already holds at a newer version.

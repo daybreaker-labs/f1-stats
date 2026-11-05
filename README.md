@@ -4,6 +4,12 @@ Public container packaging and releases for [viniciusmelchior/f1_2022](https://g
 
 The image runs PHP-FPM and nginx as an unprivileged user on port 8080. Builds target native `linux/arm64`, pin base-image digests and verify both the upstream commit and packaging revision. PR checks and release control jobs use GitHub-hosted `ubuntu-24.04-arm`. The credential-free build uses `blacksmith-4vcpu-ubuntu-2404-arm`; cold PHP builds exceed the GitHub runner timeout.
 
+The build uses a pinned Blacksmith builder with the `f1-stats-runtime-arm64`
+layer cache. A successful job commits its cache for later builds, allowing
+unchanged runtime package installs to skip network downloads; the first build
+is cold, and seven days without a build evicts the cache. Build logs show the
+selected builder and its cache usage.
+
 ## Telemetry
 
 The image adds [PHP zero-code instrumentation](https://opentelemetry.io/docs/zero-code/php/auto/)

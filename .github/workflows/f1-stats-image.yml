@@ -147,6 +147,12 @@ jobs:
           UPSTREAM_SHA: ${{ needs.resolve.outputs.upstream_sha }}
         run: test "$(git -C upstream rev-parse HEAD)" = "$UPSTREAM_SHA"
 
+      - name: Set up Blacksmith builder
+        uses: useblacksmith/setup-docker-builder@19215110ab936351210feebdfa5b440b4493e184 # v2.2.0
+        with:
+          cache-key: f1-stats-runtime-arm64
+          nofallback: 'true'
+
       - name: Build and smoke without publication
         env:
           UPSTREAM_SHA: ${{ needs.resolve.outputs.upstream_sha }}
