@@ -10,38 +10,8 @@ unchanged runtime package installs to skip network downloads; the first build
 is cold, and seven days without a build evicts the cache. Build logs show the
 selected builder and its cache usage.
 
-## Telemetry
-
-The image adds [PHP zero-code instrumentation](https://opentelemetry.io/docs/zero-code/php/auto/)
-through PECL `opentelemetry` 1.4.2 and Composer packages owned by this repository:
-[Laravel 1.10.0](https://github.com/opentelemetry-php/contrib-auto-laravel/tree/1.10.0),
-[PDO 0.6.0](https://github.com/opentelemetry-php/contrib-auto-pdo/tree/0.6.0),
-[Guzzle 1.5.0](https://github.com/opentelemetry-php/contrib-auto-guzzle/tree/1.5.0),
-[SDK 1.16.0](https://github.com/opentelemetry-php/sdk/tree/1.16.0) and
-[OTLP exporter 1.5.0](https://github.com/opentelemetry-php/exporter-otlp/tree/1.5.0).
-The build merges the telemetry requirements into its copy of the upstream
-Composer manifest and refuses changes to existing production dependency versions
-or source/archive references. The upstream repository and application code stay unchanged.
-The exporter uses Symfony HTTP Client 8.1.11 so the Guzzle instrumenter does not
-create spans for telemetry export requests.
-
-GitOps enables auto-loading, configures `service.name=f1-stats`,
-`deployment.environment=production`, a 10% parent-based sampling ratio and the
-gateway's OTLP HTTP/protobuf endpoint. `OTEL_TRACES_EXPORTER=f1_otlp` selects the
-packaging exporter, which allows only operational attributes before serialization:
-HTTP methods, route templates, status codes, database operation/engine and server
-identity. It omits URL queries, headers/cookies, SQL text/parameters and exception
-messages/stack traces. It preserves exception types, status codes and span correlation.
-Logs export is disabled. SDK internal metrics use OTLP; the gateway's Datadog
-connector derives `trace.*` request statistics from sampled traces.
-
-The image build runs `telemetry/privacy-test.php` with assertions enabled. For a
-runtime check, enable auto-loading and `f1_otlp` with a local OTLP receiver, then
-request `/users/login` with a synthetic query and cookie. Inspect the emitted
-spans and verify that neither value appears. Set `OTEL_PHP_AUTOLOAD_ENABLED=false`
-to disable telemetry; restoring the prior image digest rolls back packaging.
-Coordinate configuration and image promotion as one release because a pod
-restart clears file-backed sessions.
+The PHP image currently omits OpenTelemetry instrumentation while authenticated
+page performance is qualified; GitOps `OTEL_*` settings have no effect in this image.
 
 ## Release flow
 
