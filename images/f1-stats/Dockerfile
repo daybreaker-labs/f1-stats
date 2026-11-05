@@ -73,6 +73,7 @@ FROM runtime
 ARG UPSTREAM_SHA
 ARG PACKAGING_SHA
 ARG UPSTREAM_REPO=viniciusmelchior/f1_2022
+ENV F1_STATS_VERSION="${UPSTREAM_SHA}-${PACKAGING_SHA}"
 LABEL org.opencontainers.image.source="https://github.com/${UPSTREAM_REPO}" \
       org.opencontainers.image.revision="${UPSTREAM_SHA}" \
       org.opencontainers.image.title="f1-stats"

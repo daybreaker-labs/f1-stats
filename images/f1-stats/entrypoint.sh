@@ -3,6 +3,7 @@
 # --force` in a Job). Without, build Laravel's caches and serve.
 set -euo pipefail
 cd /var/www/html
+export OTEL_RESOURCE_ATTRIBUTES="${OTEL_RESOURCE_ATTRIBUTES:+$OTEL_RESOURCE_ATTRIBUTES,}service.version=$F1_STATS_VERSION"
 
 if [ "$#" -gt 0 ]; then
   exec "$@"

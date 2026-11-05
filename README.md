@@ -27,8 +27,9 @@ create spans for telemetry export requests.
 
 GitOps enables auto-loading, configures `service.name=f1-stats`,
 `deployment.environment=production`, a 10% parent-based sampling ratio and the
-gateway's OTLP HTTP/protobuf endpoint. `OTEL_TRACES_EXPORTER=f1_otlp` selects the
-packaging exporter, which allows only operational attributes before serialization:
+gateway's OTLP HTTP/protobuf endpoint. The image entrypoint adds the
+upstream/packaging revision pair as `service.version`. `OTEL_TRACES_EXPORTER=f1_otlp`
+selects the packaging exporter, which allows only operational attributes before serialization:
 HTTP methods, route templates, status codes, database operation/engine and server
 identity. It omits URL queries, headers/cookies, SQL text/parameters and exception
 messages/stack traces. It preserves exception types, status codes and span correlation.
