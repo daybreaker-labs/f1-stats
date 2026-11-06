@@ -36,6 +36,8 @@ OBI's kprobes are global and its uprobes attach to the nginx and php-fpm inodes 
 
 ## Same-fixture Distro reference (`f1x:fix-distro`, Distro 0.7.0 defaults, OBI still running but not selecting it)
 
+Launched with `APP=fix COLLECTOR=f1x-collector ENVFILE=experiments/obi/fixture.env python3 experiments/php-distro/launch.py distro` (the Distro exported to the same local collector), then `measure_exec.py <shape> 8 ... baseline distro` under the lock (`ref-distro.log`, not committed: `*.log` is ignored).
+
 | shape | n | variant | wall med ms | wall p95 ms | wall med % | CPU med ms | CPU med % | identical, all 200 |
 |---|---|---|---|---|---|---|---|---|
 | light | 8 | baseline | 132 | 143 | +0.0 | 94.3 | +0.0 | True |
@@ -63,3 +65,9 @@ The Distro record's own fixture gave +25% (light) and +47% (heavy) CPU for these
 - OBI v1.0.0 honours `attributes.select.traces.exclude` for `url.query` only; `url.full` on client spans and `url.path` remain, so the collector deletes them. With that, traces keep the method, status, `http.route` (Laravel templates such as `/paises/show/{id}` on php-fpm spans; `/**` for unmatched nginx paths) and `db.query.summary`.
 - `db.query.text` (opt-in) shows `?` for bound values but inlines Laravel's eager-loading ID lists (`... where pilotos.id in (1)`; 21 of 54 statements had literals), so it must stay off.
 - The MySQL span of the 100,000-row join is a bare `SELECT` (no `db.query.summary`) lasting about 0.7 ms inside a ~900 ms request (three privacy-run requests: 0.63–0.79 ms). OBI's MySQL span appears to end at the first response packet (inference), so it does not show the time spent transferring and fetching a large result; for `/home`, where that is most of the work, the spans show the queries but not where the time goes.
+
+Late review notes (from the spans already exported, not new runs):
+
+- Each request has two SERVER spans with the same name (nginx :8080 and php-fpm :9000), and both feed `http.server.request.duration`; RED views must filter on `server.port` (or service) to avoid double counting.
+- 1 of 10 php-fpm `SERVER GET /healthz` spans (the first, from `probes.py floor`) lasted 16,440 ms while its nginx client span lasted 0.5 ms; FastCGI-layer server durations can be wrong.
+- Error paths (5xx, SQL errors) were not exercised; every timed request returned 200, so `error.type` values and SQL error text are unverified.
