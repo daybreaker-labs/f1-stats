@@ -1,7 +1,11 @@
-# obi.yaml plus the privacy settings this experiment found necessary: query strings reach
-# url.query (php-fpm span) and url.full (nginx FastCGI client span), and OBI redacts only
-# known key names, so both attributes are dropped from traces. db.query.text stays at its
-# default (off); http.route and db.query.summary keep the useful low-cardinality names.
+# obi.yaml plus the OBI-side privacy settings this experiment found effective in v1.0.0:
+# - attributes.select.traces.exclude [url.query]: php-fpm spans carry the FastCGI QUERY_STRING,
+#   which OBI redacts only for known key names. Excluding url.full and url.path is not honored
+#   (client spans always build url.full; url.path stays), so collector-scrub.yaml deletes those.
+# - routes.unmatched wildcard: the default `heuristic` matcher keeps a one-off path segment as the
+#   nginx route (span name and metric attribute); unmatched paths become `/**`. php-fpm spans keep
+#   Laravel's route templates (`/paises/show/{id}`), which OBI harvests from the PHP process.
+# db.query.text stays at its default (off).
 discovery:
   instrument:
     - container_name: "f1x-fix-obi"
@@ -17,4 +21,6 @@ metrics:
 attributes:
   select:
     traces:
-      exclude: [url.query, url.full]
+      exclude: [url.query]
+routes:
+  unmatched: wildcard

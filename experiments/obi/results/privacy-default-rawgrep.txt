@@ -1,0 +1,15 @@
+planted privacy-token-value 0
+planted privacy-plain-value 1
+planted privacy-season-value 1
+planted privacy-cookie-like 1
+planted privacy-password-value 0
+planted privacy-header-csrf 0
+planted privacy-cookie-value 0
+planted privacy-path-token-value 3
+planted home-fixture@example.test 1
+planted home-fixture%40example.test 1
+planted home-fixture-password 0
+planted 987654 1
+live-value-1 1
+live-value-2 0
+live-value-3 0

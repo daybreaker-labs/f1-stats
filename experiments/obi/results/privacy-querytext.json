@@ -1,0 +1,67 @@
+{
+ "scanned": {
+  "spans": 109,
+  "datapoints": 159
+ },
+ "hits": {
+  "sql_text:span:db.query.text": {
+   "count": 54,
+   "example": "select `id` from `users` where `email` = ? limit 1"
+  },
+  "sql_literal:span:db.query.text": {
+   "count": 21,
+   "example": "select * from `pilotos` where `pilotos`.`id` in (1)"
+  }
+ },
+ "pass": false,
+ "attribute_keys": {
+  "metric:container.id": 3,
+  "metric:container.name": 3,
+  "metric:db.collection.name": 20,
+  "metric:db.operation.name": 22,
+  "metric:db.system.name": 22,
+  "metric:error.type": 42,
+  "metric:host.id": 3,
+  "metric:host.name": 3,
+  "metric:http.request.method": 132,
+  "metric:http.response.status_code": 132,
+  "metric:http.route": 132,
+  "metric:instance": 3,
+  "metric:job": 3,
+  "metric:os.type": 3,
+  "metric:server.address": 154,
+  "metric:server.port": 132,
+  "metric:service.instance.id": 3,
+  "metric:service.name": 3,
+  "metric:telemetry.distro.name": 3,
+  "metric:telemetry.distro.version": 3,
+  "metric:telemetry.sdk.language": 3,
+  "metric:telemetry.sdk.name": 3,
+  "metric:telemetry.sdk.version": 3,
+  "metric:url.scheme": 132,
+  "resource:container.id": 4,
+  "resource:container.name": 4,
+  "resource:host.id": 4,
+  "resource:host.name": 4,
+  "resource:os.type": 4,
+  "resource:otel.scope.name": 2,
+  "resource:service.instance.id": 4,
+  "resource:service.name": 4,
+  "resource:telemetry.distro.name": 4,
+  "resource:telemetry.distro.version": 4,
+  "resource:telemetry.sdk.language": 4,
+  "resource:telemetry.sdk.name": 4,
+  "resource:telemetry.sdk.version": 4,
+  "span:client.address": 22,
+  "span:db.collection.name": 48,
+  "span:db.operation.name": 54,
+  "span:db.query.text": 54,
+  "span:db.system.name": 54,
+  "span:http.request.method": 33,
+  "span:http.response.status_code": 33,
+  "span:http.route": 22,
+  "span:server.address": 87,
+  "span:server.port": 87,
+  "span:url.scheme": 15
+ }
+}

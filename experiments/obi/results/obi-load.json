@@ -1,0 +1,21 @@
+{
+ "mode": "load",
+ "at": "2026-11-06T13:18:23Z",
+ "result": {
+  "idle_ms_per_s": 10.983122483602433,
+  "baseline": {
+   "n": 30,
+   "all_200": true,
+   "elapsed_s": 46.37804412841797,
+   "obi_cpu_ms": 341.309,
+   "obi_cpu_ms_per_request_net_of_idle": -5.602224640411106
+  },
+  "obi": {
+   "n": 30,
+   "all_200": true,
+   "elapsed_s": 46.69628286361694,
+   "obi_cpu_ms": 336.441,
+   "obi_cpu_ms_per_request_net_of_idle": -5.880999807335007
+  }
+ }
+}

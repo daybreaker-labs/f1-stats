@@ -16,6 +16,7 @@ checks = {
   'csrf': lambda k, v: re.search(r'(?i)_token|xsrf|csrf', k + ' ' + v) is not None or re.fullmatch(r'[A-Za-z0-9]{40}', v) is not None,
   'credential': lambda k, v: re.search(r'(?i)password|@example\.test', k + ' ' + v) is not None,
   'sql_text': lambda k, v: k in ('db.query.text', 'db.statement') or (k.startswith('db.') and (re.search(r"'[^']*'", v) or re.search(r'=\s*-?\d', v))),
+  'sql_literal': lambda k, v: k in ('db.query.text', 'db.statement') and re.search(r"(?i)\bin \((\d+, )*\d+\)|'[^']*'|[=<>]\s*-?\d", v) is not None,
   'literal': lambda k, v: any(x in v for x in LIT),
 }
 # Examples are committed: mask live CSRF/session token shapes (40+ alphanumerics) before storing them.

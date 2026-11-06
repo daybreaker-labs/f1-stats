@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Two small probes, both under the timing lock (env LOCK):
   probes.py idle <seconds> <out.json>   OBI's own CPU and memory with no traffic (env OBI_CG, CGREADER)
+  probes.py load <n> <out.json>         OBI's own CPU per request from whole-phase cgroup deltas: idle 60 s, then n
+                                        back-to-back heavy /home requests to baseline (not selected), then n to obi;
+                                        each phase's OBI CPU minus idle rate x elapsed, divided by n.
   probes.py floor <n> <out.json>        CPU charged to the app container by the measurement path itself:
                                         the same docker exec + curl + 1 s settle as measure_exec.py, on /healthz
                                         (php-fpm ping through nginx, no Laravel), for baseline and obi."""
@@ -22,6 +25,22 @@ if mode == 'idle':
     st = dict(l.split() for l in rd('memory.stat').splitlines())
     res = {'seconds': t1 - t0, 'obi_cpu_ms': (c1 - c0) / 1000, 'obi_cpu_ms_per_s': (c1 - c0) / 1000 / (t1 - t0),
            'memory_current_bytes': int(rd('memory.current')), 'anon_bytes': int(st['anon']), 'kernel_bytes': int(st.get('kernel', 0))}
+elif mode == 'load':
+    u = lambda: int(dict(l.split() for l in rd('cpu.stat').splitlines())['usage_usec'])
+    CURL = "curl -s -H 'Host: home.fixture.test' -H 'Accept-Encoding: identity' -b /tmp/lj -c /tmp/lj "
+    for v in ('baseline', 'obi'):
+        ex(v, 'rm -f /tmp/lj'); tk = ex(v, CURL + "http://127.0.0.1:8080/users/login | grep -o 'name=\"_token\"[^>]*value=\"[^\"]*' | sed 's/.*value=\"//'").strip()
+        ex(v, CURL + f"-o /dev/null --data-urlencode _token={tk} --data-urlencode email=home-fixture@example.test --data-urlencode password=home-fixture-password http://127.0.0.1:8080/users/authenticate")
+    time.sleep(20)   # let the login spans and a metric export drain
+    t0, c0 = time.time(), u(); time.sleep(60); t1, c1 = time.time(), u(); idle = (c1 - c0) / (t1 - t0)
+    res = {'idle_ms_per_s': idle / 1000}
+    for v in ('baseline', 'obi'):
+        t0, c0 = time.time(), u()
+        codes = ex(v, f"for i in $(seq {n}); do {CURL} -o /dev/null -w '%{{http_code}} ' http://127.0.0.1:8080/home; done").split()
+        time.sleep(20)   # OBI's batch timeout is 15 s and metrics export every 10 s: include the drain
+        t1, c1 = time.time(), u()
+        res[v] = {'n': n, 'all_200': codes == ['200'] * n, 'elapsed_s': t1 - t0, 'obi_cpu_ms': (c1 - c0) / 1000,
+                  'obi_cpu_ms_per_request_net_of_idle': ((c1 - c0) - idle * (t1 - t0)) / 1000 / n}
 else:
     rows = []
     for i in range(n):

@@ -1,7 +1,7 @@
 {
  "scanned": {
-  "spans": 85,
-  "datapoints": 217
+  "spans": 109,
+  "datapoints": 201
  },
  "hits": {
   "query_string:span:url.query": {
@@ -17,7 +17,7 @@
    "example": "/index.php?email=home-fixture%40example.test&token=REDACTED&q=privacy-plain-value"
   },
   "literal:span:url.full": {
-   "count": 3,
+   "count": 7,
    "example": "/index.php?email=home-fixture%40example.test&token=REDACTED&q=privacy-plain-value"
   },
   "csrf:span:url.query": {
@@ -41,66 +41,86 @@
    "example": "/index.php?remember_web=privacy-cookie-like&password=REDACTED"
   },
   "credential:span:url.full": {
-   "count": 1,
+   "count": 2,
    "example": "/index.php?remember_web=privacy-cookie-like&password=REDACTED"
+  },
+  "literal:span:url.path": {
+   "count": 6,
+   "example": "/paises/show/987654"
+  },
+  "literal:span:name": {
+   "count": 2,
+   "example": "GET /users/privacy-path-token-value"
+  },
+  "literal:span:http.route": {
+   "count": 1,
+   "example": "/users/privacy-path-token-value"
+  },
+  "credential:span:url.path": {
+   "count": 1,
+   "example": "/home/home-fixture@example.test"
+  },
+  "literal:metric:http.route": {
+   "count": 12,
+   "example": "/users/privacy-path-token-value"
   }
  },
  "pass": false,
  "attribute_keys": {
-  "metric:container.id": 4,
-  "metric:container.name": 4,
-  "metric:db.collection.name": 27,
-  "metric:db.operation.name": 30,
-  "metric:db.system.name": 30,
-  "metric:error.type": 18,
-  "metric:host.id": 4,
-  "metric:host.name": 4,
-  "metric:http.request.method": 180,
-  "metric:http.response.status_code": 180,
-  "metric:http.route": 180,
-  "metric:instance": 4,
-  "metric:job": 4,
-  "metric:os.type": 4,
-  "metric:server.address": 210,
-  "metric:server.port": 180,
-  "metric:service.instance.id": 4,
-  "metric:service.name": 4,
-  "metric:telemetry.distro.name": 4,
-  "metric:telemetry.distro.version": 4,
-  "metric:telemetry.sdk.language": 4,
-  "metric:telemetry.sdk.name": 4,
-  "metric:telemetry.sdk.version": 4,
-  "metric:url.scheme": 180,
-  "resource:container.id": 5,
-  "resource:container.name": 5,
-  "resource:host.id": 5,
-  "resource:host.name": 5,
-  "resource:os.type": 5,
+  "metric:container.id": 3,
+  "metric:container.name": 3,
+  "metric:db.collection.name": 20,
+  "metric:db.operation.name": 22,
+  "metric:db.system.name": 22,
+  "metric:error.type": 60,
+  "metric:host.id": 3,
+  "metric:host.name": 3,
+  "metric:http.request.method": 174,
+  "metric:http.response.status_code": 174,
+  "metric:http.route": 174,
+  "metric:instance": 3,
+  "metric:job": 3,
+  "metric:os.type": 3,
+  "metric:server.address": 196,
+  "metric:server.port": 174,
+  "metric:service.instance.id": 3,
+  "metric:service.name": 3,
+  "metric:telemetry.distro.name": 3,
+  "metric:telemetry.distro.version": 3,
+  "metric:telemetry.sdk.language": 3,
+  "metric:telemetry.sdk.name": 3,
+  "metric:telemetry.sdk.version": 3,
+  "metric:url.scheme": 174,
+  "resource:container.id": 4,
+  "resource:container.name": 4,
+  "resource:host.id": 4,
+  "resource:host.name": 4,
+  "resource:os.type": 4,
   "resource:otel.scope.name": 2,
-  "resource:service.instance.id": 5,
-  "resource:service.name": 5,
-  "resource:telemetry.distro.name": 5,
-  "resource:telemetry.distro.version": 5,
-  "resource:telemetry.sdk.language": 5,
-  "resource:telemetry.sdk.name": 5,
-  "resource:telemetry.sdk.version": 5,
-  "span:client.address": 14,
-  "span:db.collection.name": 44,
-  "span:db.operation.name": 50,
-  "span:db.query.summary": 47,
-  "span:db.system.name": 50,
-  "span:error.type": 2,
-  "span:http.request.method": 21,
-  "span:http.response.status_code": 21,
-  "span:http.route": 14,
-  "span:network.peer.address": 71,
-  "span:network.peer.port": 71,
-  "span:network.protocol.version": 7,
-  "span:server.address": 71,
-  "span:server.port": 71,
-  "span:url.full": 7,
-  "span:url.path": 14,
+  "resource:service.instance.id": 4,
+  "resource:service.name": 4,
+  "resource:telemetry.distro.name": 4,
+  "resource:telemetry.distro.version": 4,
+  "resource:telemetry.sdk.language": 4,
+  "resource:telemetry.sdk.name": 4,
+  "resource:telemetry.sdk.version": 4,
+  "span:client.address": 22,
+  "span:db.collection.name": 48,
+  "span:db.operation.name": 54,
+  "span:db.query.summary": 51,
+  "span:db.system.name": 54,
+  "span:error.type": 10,
+  "span:http.request.method": 33,
+  "span:http.response.status_code": 33,
+  "span:http.route": 22,
+  "span:network.peer.address": 87,
+  "span:network.peer.port": 87,
+  "span:network.protocol.version": 11,
+  "span:server.address": 87,
+  "span:server.port": 87,
+  "span:url.full": 11,
+  "span:url.path": 22,
   "span:url.query": 9,
-  "span:url.scheme": 9
+  "span:url.scheme": 15
  }
 }

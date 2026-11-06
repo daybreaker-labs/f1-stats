@@ -1,6 +1,7 @@
-# collector.yaml plus a query-string scrub. OBI v1.0.0 always appends the (key-redacted)
-# query string to url.full on HTTP client spans, including nginx's FastCGI hop, and no
-# attribute selector removes it, so the collector strips everything after '?'.
+# collector.yaml plus a URL scrub. OBI v1.0.0 always sets url.full on HTTP client spans (nginx's
+# FastCGI hop) with the key-redacted query string, and url.path with the raw path on server spans;
+# its attribute selector does not remove either. The low-cardinality http.route and span names
+# stay, so the raw URL attributes are deleted.
 receivers:
   otlp:
     protocols:
@@ -14,7 +15,8 @@ processors:
     trace_statements:
       - context: span
         statements:
-          - replace_pattern(attributes["url.full"], "\\?.*$", "")
+          - delete_key(attributes, "url.full")
+          - delete_key(attributes, "url.path")
           - delete_key(attributes, "url.query")
 exporters:
   debug:
