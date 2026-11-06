@@ -2,7 +2,7 @@
 
 Public container packaging and releases for [viniciusmelchior/f1_2022](https://github.com/viniciusmelchior/f1_2022). The application stays upstream; this repository owns the Docker image and release workflow.
 
-The image runs PHP-FPM and nginx as an unprivileged user on port 8080. Builds target native `linux/arm64`, pin base-image digests and verify both the upstream commit and packaging revision. PR checks and release control jobs use GitHub-hosted `ubuntu-24.04-arm`. The credential-free build uses `blacksmith-4vcpu-ubuntu-2404-arm`; cold PHP builds exceed the GitHub runner timeout.
+The image runs PHP-FPM and nginx as an unprivileged user on port 8080. Builds target native `linux/arm64`, pin base-image digests and verify both the upstream commit and packaging revision. Terraform-managed `CI_RUNNER` routes PR checks and release control jobs to Blacksmith, and `CI_LARGE_RUNNER` routes the credential-free build to its 4-vCPU ARM pool. Both fall back to GitHub-hosted `ubuntu-24.04-arm`. Checkouts use the Blacksmith cached mirror; the image archive still crosses jobs through a digest-verified GitHub artifact.
 
 The build uses a pinned Blacksmith builder with the `f1-stats-runtime-arm64`
 layer cache. A successful job commits its cache for later builds, allowing
@@ -31,7 +31,7 @@ All secrets belong in the `release` environment, restricted to `main`. Only the 
 | Kind | Names |
 | --- | --- |
 | Environment secrets | `OCIR_AUTH_TOKEN`, `F1_DEPLOY_APP_ID`, `F1_DEPLOY_APP_PRIVATE_KEY`, `F1_STATUS_APP_ID`, `F1_STATUS_APP_PRIVATE_KEY`, `LINEAR_API_KEY` |
-| Repository variables | `OCIR_USERNAME`, `F1_STATS_AUTO_DEPLOY` |
+| Repository variables | `OCIR_USERNAME`, `F1_STATS_AUTO_DEPLOY`, `CI_RUNNER`, `CI_LARGE_RUNNER` |
 | Optional upstream overrides | `F1_STATS_UPSTREAM_OWNER`, `F1_STATS_UPSTREAM_NAME` |
 
 The registry credential is dedicated to the F1 Stats image. The dedicated
