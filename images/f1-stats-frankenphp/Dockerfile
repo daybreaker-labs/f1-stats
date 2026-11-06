@@ -67,5 +67,8 @@ ENV LOG_CHANNEL=stderr \
 USER 33:33
 EXPOSE 8080
 STOPSIGNAL SIGTERM
+# The base image probes Caddy's admin API, which is off here; Kubernetes
+# probes /healthz instead.
+HEALTHCHECK NONE
 ENTRYPOINT ["/usr/local/bin/f1-stats-entrypoint"]
 CMD []

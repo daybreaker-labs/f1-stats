@@ -109,6 +109,44 @@
 		import front
 	}
 
+	# nginx's "try_files $uri $uri/" answers an existing directory itself: a
+	# redirect to the slash form, or 403 where it holds no index.php (autoindex
+	# is off). A directory that does hold one falls through to Laravel's 404.
+	# A "/" suffix in try_files and the file matcher only matches directories:
+	# https://caddyserver.com/docs/caddyfile/matchers#file
+	@dirslash {
+		path */
+		file {
+			try_files {path}
+		}
+		not file {
+			try_files {path}index.php
+		}
+	}
+	@dirnoslash {
+		not path */
+		expression {http.request.uri.query} == ''
+		file {
+			try_files {path}/
+		}
+	}
+	@dirnoslashq {
+		not path */
+		expression {http.request.uri.query} != ''
+		file {
+			try_files {path}/
+		}
+	}
+	handle @dirslash {
+		respond 403
+	}
+	handle @dirnoslash {
+		redir {path}/ 301
+	}
+	handle @dirnoslashq {
+		redir {path}/?{query} 301
+	}
+
 	handle {
 		import front
 	}
