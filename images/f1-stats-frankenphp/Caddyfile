@@ -1,0 +1,100 @@
+# Classic-mode FrankenPHP (no worker, no Octane) replacing nginx + php-fpm.
+# Directive references: Caddyfile global options, https://caddyserver.com/docs/caddyfile/options ;
+# FrankenPHP v1.13.5 php_server / php, https://frankenphp.dev/docs/config/ ;
+# classic mode, https://frankenphp.dev/docs/classic/ .
+# TLS terminates at Traefik, so nothing here listens on 80/443 or manages certs.
+{
+	# No admin socket, no stored config, no ACME: the root filesystem is
+	# read-only and the only writable paths are the mounts the pod declares.
+	admin off
+	persist_config off
+	auto_https off
+
+	# Classic mode: every request boots PHP afresh on one of a fixed set of
+	# threads. Five matches php-fpm's default pm.max_children, which the
+	# Deployment's 768Mi limit was sized for. max_wait_time ends a request that
+	# waited for a free thread as long as nginx's fastcgi_read_timeout.
+	frankenphp {
+		num_threads 5
+		max_wait_time 60s
+	}
+}
+
+:8080 {
+	root * /var/www/html/public
+
+	# nginx's access_log went to stdout; Caddy's errors already go to stderr.
+	log {
+		output stdout
+	}
+
+	# Matches nginx client_max_body_size 16M.
+	request_body {
+		max_size 16MiB
+	}
+
+	# Laravel builds absolute URLs from HTTPS. The request reaches Caddy over
+	# plain HTTP, so the scheme comes from Traefik's header; the application's
+	# TrustProxies trusts no proxy, hence $_SERVER['HTTPS'] is set here.
+	map {header.X-Forwarded-Proto} {f1_https} {
+		https on
+		default ""
+	}
+
+	# Same headers nginx added to every response except /healthz.
+	@app not path /healthz
+	header @app {
+		+X-Frame-Options "SAMEORIGIN"
+		+X-Content-Type-Options "nosniff"
+		+Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	# Liveness page: a PHP thread answers, Laravel and MySQL are not touched.
+	# The headers name what this image was built from, so a release can tell
+	# when it is the one serving. log_skip keeps probes out of the access log,
+	# as nginx's access_log off did.
+	handle /healthz {
+		log_skip
+		header X-F1-Revision "__UPSTREAM_SHA__"
+		header X-F1-Packaging "__PACKAGING_SHA__"
+		root * /opt/f1-stats/health
+		rewrite * /healthz.php
+		php
+	}
+
+	# nginx denies "/." unless followed by "well-known/". RE2 has no lookahead,
+	# so the pattern lists every way the text after "/." can differ from it.
+	@denied {
+		path_regexp dotfile /\.(?:[^w]|$|w(?:[^e]|$|e(?:[^l]|$|l(?:[^l]|$|l(?:[^-]|$|-(?:[^k]|$|k(?:[^n]|$|n(?:[^o]|$|o(?:[^w]|$|w(?:[^n]|$|n(?:[^/]|$)))))))))))
+	}
+	@composer path_regexp (?i)(^|/)composer\.(json|lock)$
+	@internal path_regexp (?i)^/(storage|vendor)/
+	handle @denied {
+		respond 403
+	}
+	handle @composer {
+		respond 403
+	}
+	handle @internal {
+		respond 403
+	}
+
+	# Only the front controller executes: any other .php path falls through to
+	# Laravel, as nginx's error_page 404 /index.php did.
+	@strayphp {
+		path_regexp \.php$
+		not path_regexp ^/index\.php(/|$)
+	}
+	handle @strayphp {
+		rewrite * /index.php
+		php_server {
+			env HTTPS {f1_https}
+		}
+	}
+
+	handle {
+		php_server {
+			env HTTPS {f1_https}
+		}
+	}
+}
