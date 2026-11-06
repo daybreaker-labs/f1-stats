@@ -11,6 +11,8 @@ name: f1-stats image
 # dispatches with auto every 15 minutes. An auto run takes the same path as a
 # scheduled one, and the cron stays as a backup.
 #
+# Terraform routes checks and release control jobs through CI_RUNNER, and the
+# credential-free build through CI_LARGE_RUNNER; both fall back to GitHub ARM.
 # The build job runs third-party code (composer scripts, the smoke and migration
 # containers) and never sees a credential; the publish job alone logs in to OCIR
 # and handles the image as an opaque archive; only jobs that never check out or
@@ -59,7 +61,7 @@ jobs:
   resolve:
     environment: release
     if: (github.event_name == 'workflow_dispatch' && !inputs.auto) || vars.F1_STATS_AUTO_DEPLOY == 'true'
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04-arm' }}
     timeout-minutes: 5
     outputs:
       run: ${{ steps.decide.outputs.run }}
@@ -69,7 +71,7 @@ jobs:
       packaging_sha: ${{ steps.decide.outputs.packaging_sha }}
       tag: ${{ steps.decide.outputs.tag }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
         with:
           persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
@@ -121,7 +123,7 @@ jobs:
   build:
     needs: resolve
     if: needs.resolve.outputs.run == 'true'
-    runs-on: blacksmith-4vcpu-ubuntu-2404-arm
+    runs-on: ${{ vars.CI_LARGE_RUNNER || 'ubuntu-24.04-arm' }}
     timeout-minutes: 30
     outputs:
       archive_sha256: ${{ steps.save.outputs.archive_sha256 }}
@@ -130,12 +132,12 @@ jobs:
       - name: Require native ARM
         run: test "$(uname -m)" = aarch64
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
         with:
           persist-credentials: false
           path: stack
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
         with:
           repository: ${{ env.UPSTREAM_REPO }}
           ref: ${{ needs.resolve.outputs.upstream_sha }}
@@ -151,7 +153,7 @@ jobs:
         uses: useblacksmith/setup-docker-builder@19215110ab936351210feebdfa5b440b4493e184 # v2.2.0
         with:
           cache-key: f1-stats-runtime-arm64
-          nofallback: 'true'
+          nofallback: ${{ startsWith(vars.CI_LARGE_RUNNER, 'blacksmith-') }}
 
       - name: Build and smoke without publication
         env:
@@ -231,7 +233,7 @@ jobs:
           echo "archive_sha256=$(sha256sum f1-stats-image/image.tar.gz | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
           echo "image_id=$(docker image inspect f1-stats:qualification --format '{{.Id}}')" >> "$GITHUB_OUTPUT"
 
-      # Blacksmith and GitHub runners use different cache backends.
+      # The artifact preserves the digest-verified handoff between isolated jobs.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: needs.resolve.outputs.publish == 'true'
         with:
@@ -247,7 +249,7 @@ jobs:
       needs.resolve.outputs.publish == 'true' && github.ref == 'refs/heads/main' &&
       github.repository == 'daybreaker-labs/f1-stats'
     needs: [resolve, build]
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04-arm' }}
     timeout-minutes: 15
     outputs:
       digest: ${{ steps.publish.outputs.digest }}
@@ -257,7 +259,7 @@ jobs:
       ARCHIVE_SHA256: ${{ needs.build.outputs.archive_sha256 }}
       IMAGE_ID: ${{ needs.build.outputs.image_id }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
         with:
           persist-credentials: false
       - name: Mask registry account in command output
@@ -377,10 +379,10 @@ jobs:
     environment: release
     needs: [resolve, publish]
     if: needs.resolve.outputs.deploy == 'true'
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04-arm' }}
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
         with:
           persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
@@ -407,10 +409,10 @@ jobs:
 
   verify:
     needs: [resolve, promote]
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04-arm' }}
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
         with:
           persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
@@ -426,14 +428,14 @@ jobs:
     environment: release
     needs: [resolve, build, publish, promote, verify]
     if: always() && needs.resolve.outputs.deploy == 'true'
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04-arm' }}
     timeout-minutes: 5
     env:
       UPSTREAM_SHA: ${{ needs.resolve.outputs.upstream_sha }}
       PACKAGING_SHA: ${{ needs.resolve.outputs.packaging_sha }}
       STATE: ${{ needs.verify.result == 'success' && 'success' || 'failure' }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
         with:
           persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
