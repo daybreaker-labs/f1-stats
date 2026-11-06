@@ -1,6 +1,8 @@
 # Classic-mode FrankenPHP (no worker, no Octane) replacing nginx + php-fpm.
 # Directive references: Caddyfile global options, https://caddyserver.com/docs/caddyfile/options ;
-# FrankenPHP v1.13.5 php_server / php, https://frankenphp.dev/docs/config/ ;
+# FrankenPHP v1.13.5 php directive, https://frankenphp.dev/docs/config/ ;
+# Caddy try_files https://caddyserver.com/docs/caddyfile/directives/try_files ;
+# file_server https://caddyserver.com/docs/caddyfile/directives/file_server ;
 # classic mode, https://frankenphp.dev/docs/classic/ .
 # TLS terminates at Traefik, so nothing here listens on 80/443 or manages certs.
 {
@@ -18,6 +20,21 @@
 		num_threads 5
 		max_wait_time 60s
 	}
+}
+
+# php_server would also run a directory's index.php and any existing .php file,
+# so the pieces are spelled out: try_files serves an existing file and
+# otherwise rewrites to /index.php (split_path keeps PATH_INFO of
+# /index.php/...), php runs only /index.php, file_server serves static files.
+(front) {
+	try_files {path} /index.php {
+		split_path .php
+	}
+	@front path /index.php /index.php/*
+	php @front {
+		env HTTPS {f1_https}
+	}
+	file_server
 }
 
 :8080 {
@@ -79,22 +96,20 @@
 		respond 403
 	}
 
-	# Only the front controller executes: any other .php path falls through to
-	# Laravel, as nginx's error_page 404 /index.php did.
+	# Only the front controller executes, as in nginx. Any path with a ".php"
+	# segment that does not start at /index.php (/x.php, /x.php/extra,
+	# /dir/x.php/more) falls through to Laravel as nginx's error_page 404
+	# /index.php did.
 	@strayphp {
-		path_regexp \.php$
+		path_regexp \.php(/|$)
 		not path_regexp ^/index\.php(/|$)
 	}
 	handle @strayphp {
 		rewrite * /index.php
-		php_server {
-			env HTTPS {f1_https}
-		}
+		import front
 	}
 
 	handle {
-		php_server {
-			env HTTPS {f1_https}
-		}
+		import front
 	}
 }
