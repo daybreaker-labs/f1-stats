@@ -150,7 +150,7 @@ jobs:
         run: test "$(git -C upstream rev-parse HEAD)" = "$UPSTREAM_SHA"
 
       - name: Set up Blacksmith builder
-        uses: useblacksmith/setup-docker-builder@19215110ab936351210feebdfa5b440b4493e184 # v2.2.0
+        uses: useblacksmith/setup-docker-builder@06dd9c83a5d541274d2e3ac67625560979275267 # v2.3.0
         with:
           cache-key: f1-stats-runtime-arm64
           nofallback: ${{ startsWith(vars.CI_LARGE_RUNNER, 'blacksmith-') }}
