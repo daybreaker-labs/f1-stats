@@ -4,7 +4,18 @@ Requests run through `docker exec <container> curl http://127.0.0.1:8080` so the
 nr_throttled) can be read right before and after each request; wall time is curl's time_total.
   measure_exec.py <heavy|light> <pairs> <out.json> <variant> [<variant> ...]   (first variant = baseline)
 Traceparent policy is the same as measure.py (pair 0 sampled by traceidratio 0.1, the rest dropped; flag 01 always)."""
-import os, json, math, re, statistics, subprocess, sys, time, hashlib
+import os, json, math, re, statistics, subprocess, sys, time, hashlib, atexit, signal
+# The script takes the machine-wide timing lock itself (env LOCK, a directory created with mkdir) for the whole measurement
+# and releases it on exit, error or TERM/INT, so no wrapper is needed and no timed run can overlap another benchmark.
+LOCK = os.environ['LOCK']
+while True:
+    try: os.mkdir(LOCK); break
+    except FileExistsError: time.sleep(15)
+def _release(*_):
+    try: os.rmdir(LOCK)
+    except OSError: pass
+atexit.register(_release)
+for _s in (signal.SIGTERM, signal.SIGINT): signal.signal(_s, lambda *a: (_release(), os._exit(1)))
 APP = os.environ.get('APP', 'main')
 shape, pairs, out, *variants = sys.argv[1:]; pairs = int(pairs)
 email = {'heavy': 'home-fixture@example.test', 'light': 'home-no-titles@example.test'}[shape]
@@ -25,6 +36,7 @@ def get(v, i):
     c1, t1 = cpu(v)
     tt, code, _ = r.split()
     h = ex(v, "t=$(grep -o 'csrf-token\" content=\"[^\"]*' /tmp/o.html | cut -d'\"' -f3); test -n \"$t\" && sed \"s/$t/NORMALIZED_CSRF/g\" /tmp/o.html | sha256sum | cut -d' ' -f1; grep -c 'Fixture Pilot' /tmp/o.html").split()
+    if len(h) < 2: h = [None, '0']   # non-HTML failure (e.g. 500): keep the row, mark it
     return float(tt) * 1000, int(code), (c1 - c0) / 1000, t1 - t0, h[0], int(h[1]) > 0
 hashes = {}
 for v in variants:
@@ -43,7 +55,7 @@ base = variants[0]; res = {}
 for v in variants:
     R = [r for r in rows if r['variant'] == v]; xs = [r['ms'] for r in R]; cs = [r['cpu_ms'] for r in R]
     res[v] = {'n': len(xs), 'median': statistics.median(xs), 'p95': pct(xs, .95), 'cpu_median': statistics.median(cs), 'cpu_p95': pct(cs, .95), 'throttled': sum(r['throttled'] for r in R),
-              'identical': all(r['hash'] == hashes[base] for r in R) and hashes[v] == hashes[base], 'all_200': all(r['status'] == 200 for r in R)}
+              'p95_excl_pair0': pct([r['ms'] for r in R if r['pair']], .95), 'identical': all(r['hash'] == hashes[base] for r in R) and hashes[v] == hashes[base], 'all_200': all(r['status'] == 200 for r in R)}
 for v in variants:
     for k in ('median', 'p95', 'cpu_median', 'cpu_p95'): res[v][k + '_overhead_pct'] = (res[v][k] / res[base][k] - 1) * 100
     res[v]['paired_median_overhead_pct'] = statistics.median([(next(r['ms'] for r in rows if r['pair'] == i and r['variant'] == v) / next(r['ms'] for r in rows if r['pair'] == i and r['variant'] == base) - 1) * 100 for i in range(pairs)])
