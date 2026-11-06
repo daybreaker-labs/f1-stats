@@ -1,0 +1,34 @@
+# collector.yaml plus a query-string scrub. OBI v1.0.0 always appends the (key-redacted)
+# query string to url.full on HTTP client spans, including nginx's FastCGI hop, and no
+# attribute selector removes it, so the collector strips everything after '?'.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+processors:
+  transform/strip-query:
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - replace_pattern(attributes["url.full"], "\\?.*$", "")
+          - delete_key(attributes, "url.query")
+exporters:
+  debug:
+    verbosity: basic
+  file/traces:
+    path: /out/traces.jsonl
+  file/metrics:
+    path: /out/metrics.jsonl
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [transform/strip-query]
+      exporters: [debug, file/traces]
+    metrics:
+      receivers: [otlp]
+      exporters: [debug, file/metrics]

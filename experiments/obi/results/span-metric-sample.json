@@ -1,0 +1,556 @@
+{
+ "resource": {
+  "service.name": "f1x-fix-obi",
+  "telemetry.sdk.language": "php",
+  "telemetry.sdk.name": "opentelemetry",
+  "telemetry.sdk.version": "v1.47.0",
+  "telemetry.distro.name": "opentelemetry-ebpf-instrumentation",
+  "telemetry.distro.version": "v1.0.0",
+  "host.name": "7f1eb471f4fa",
+  "host.id": "",
+  "os.type": "linux",
+  "container.name": "f1x-fix-obi",
+  "container.id": "c8fa76668c20",
+  "service.instance.id": "f1x-fix-obi",
+  "otel.scope.name": "go.opentelemetry.io/obi"
+ },
+ "span_counts": {
+  "CLIENT SELECT piloto_equipes": 110,
+  "CLIENT SELECT temporadas": 90,
+  "SERVER GET /home": 90,
+  "INTERNAL in queue": 65,
+  "INTERNAL processing": 65,
+  "CLIENT SELECT pilotos": 65,
+  "CLIENT SELECT equipes": 65,
+  "CLIENT SELECT users": 55,
+  "CLIENT SELECT": 45,
+  "CLIENT SELECT titulos": 45,
+  "CLIENT SELECT corridas resultados": 45,
+  "CLIENT SELECT pistas": 45,
+  "CLIENT SELECT paises": 45,
+  "CLIENT SELECT resultados": 45,
+  "CLIENT GET /home": 45,
+  "SERVER GET /healthz": 20,
+  "SERVER GET /users/login": 10,
+  "CLIENT GET /healthz": 10,
+  "CLIENT GET /users/login": 5,
+  "SERVER POST /*": 5,
+  "CLIENT POST /users/authenticate": 5,
+  "SERVER POST /users/authenticate": 5
+ },
+ "examples": {
+  "SERVER GET /users/login": {
+   "duration_ms": 93.364,
+   "attributes": {
+    "server.port": "9000",
+    "client.address": "127.0.0.1",
+    "server.address": "f1x-fix-obi",
+    "http.response.status_code": "200",
+    "http.request.method": "GET",
+    "url.path": "/users/login",
+    "http.route": "/users/login",
+    "network.peer.address": "127.0.0.1",
+    "network.peer.port": "34162"
+   }
+  },
+  "CLIENT GET /users/login": {
+   "duration_ms": 93.621,
+   "attributes": {
+    "server.port": "9000",
+    "server.address": "127.0.0.1",
+    "url.full": "/users/login",
+    "http.request.method": "GET",
+    "http.response.status_code": "200",
+    "url.scheme": "http",
+    "network.peer.address": "127.0.0.1",
+    "network.peer.port": "9000"
+   }
+  },
+  "INTERNAL in queue": {
+   "duration_ms": 0.174,
+   "attributes": {}
+  },
+  "INTERNAL processing": {
+   "duration_ms": 94.287,
+   "attributes": {}
+  },
+  "CLIENT SELECT users": {
+   "duration_ms": 0.279,
+   "attributes": {
+    "server.port": "3306",
+    "db.system.name": "mysql",
+    "server.address": "172.18.0.2",
+    "db.operation.name": "SELECT",
+    "db.collection.name": "users",
+    "db.query.summary": "SELECT users",
+    "network.peer.address": "172.18.0.2",
+    "network.peer.port": "3306"
+   }
+  },
+  "SERVER POST /*": {
+   "duration_ms": 79.329,
+   "attributes": {
+    "server.port": "9000",
+    "client.address": "127.0.0.1",
+    "server.address": "f1x-fix-obi",
+    "http.response.status_code": "302",
+    "http.request.method": "POST",
+    "url.path": "/index.php",
+    "http.route": "/*",
+    "network.peer.address": "127.0.0.1",
+    "network.peer.port": "34170"
+   }
+  },
+  "CLIENT POST /users/authenticate": {
+   "duration_ms": 79.562,
+   "attributes": {
+    "server.port": "9000",
+    "server.address": "127.0.0.1",
+    "url.full": "/users/authenticate",
+    "http.request.method": "POST",
+    "http.response.status_code": "302",
+    "network.peer.address": "127.0.0.1",
+    "network.peer.port": "9000"
+   }
+  },
+  "SERVER POST /users/authenticate": {
+   "duration_ms": 80.218,
+   "attributes": {
+    "server.port": "8080",
+    "client.address": "127.0.0.1",
+    "server.address": "f1x-fix-obi",
+    "http.response.status_code": "302",
+    "http.request.method": "POST",
+    "url.path": "/users/authenticate",
+    "url.scheme": "http",
+    "http.route": "/users/authenticate",
+    "network.peer.address": "127.0.0.1",
+    "network.peer.port": "46250",
+    "network.protocol.version": "1.1"
+   }
+  },
+  "CLIENT SELECT temporadas": {
+   "duration_ms": 0.157,
+   "attributes": {
+    "server.port": "3306",
+    "db.system.name": "mysql",
+    "server.address": "172.18.0.2",
+    "db.operation.name": "SELECT",
+    "db.collection.name": "temporadas",
+    "db.query.summary": "SELECT temporadas",
+    "network.peer.address": "172.18.0.2",
+    "network.peer.port": "3306"
+   }
+  },
+  "CLIENT SELECT": {
+   "duration_ms": 39.997,
+   "attributes": {
+    "server.port": "3306",
+    "db.system.name": "mysql",
+    "server.address": "172.18.0.2",
+    "db.operation.name": "SELECT",
+    "network.peer.address": "172.18.0.2",
+    "network.peer.port": "3306"
+   }
+  },
+  "CLIENT SELECT titulos": {
+   "duration_ms": 0.141,
+   "attributes": {
+    "server.port": "3306",
+    "db.system.name": "mysql",
+    "server.address": "172.18.0.2",
+    "db.operation.name": "SELECT",
+    "db.collection.name": "titulos",
+    "db.query.summary": "SELECT titulos",
+    "network.peer.address": "172.18.0.2",
+    "network.peer.port": "3306"
+   }
+  },
+  "CLIENT SELECT corridas resultados": {
+   "duration_ms": 5.76,
+   "attributes": {
+    "server.port": "3306",
+    "db.system.name": "mysql",
+    "server.address": "172.18.0.2",
+    "db.operation.name": "SELECT",
+    "db.query.summary": "SELECT corridas resultados",
+    "network.peer.address": "172.18.0.2",
+    "network.peer.port": "3306"
+   }
+  },
+  "CLIENT SELECT pistas": {
+   "duration_ms": 0.1,
+   "attributes": {
+    "server.port": "3306",
+    "db.system.name": "mysql",
+    "server.address": "172.18.0.2",
+    "db.operation.name": "SELECT",
+    "db.collection.name": "pistas",
+    "db.query.summary": "SELECT pistas",
+    "network.peer.address": "172.18.0.2",
+    "network.peer.port": "3306"
+   }
+  },
+  "CLIENT SELECT paises": {
+   "duration_ms": 0.056,
+   "attributes": {
+    "server.port": "3306",
+    "db.system.name": "mysql",
+    "server.address": "172.18.0.2",
+    "db.operation.name": "SELECT",
+    "db.collection.name": "paises",
+    "db.query.summary": "SELECT paises",
+    "network.peer.address": "172.18.0.2",
+    "network.peer.port": "3306"
+   }
+  },
+  "CLIENT SELECT resultados": {
+   "duration_ms": 1.185,
+   "attributes": {
+    "server.port": "3306",
+    "db.system.name": "mysql",
+    "server.address": "172.18.0.2",
+    "db.operation.name": "SELECT",
+    "db.collection.name": "resultados",
+    "db.query.summary": "SELECT resultados",
+    "network.peer.address": "172.18.0.2",
+    "network.peer.port": "3306"
+   }
+  },
+  "CLIENT SELECT piloto_equipes": {
+   "duration_ms": 0.723,
+   "attributes": {
+    "server.port": "3306",
+    "db.system.name": "mysql",
+    "server.address": "172.18.0.2",
+    "db.operation.name": "SELECT",
+    "db.collection.name": "piloto_equipes",
+    "db.query.summary": "SELECT piloto_equipes",
+    "network.peer.address": "172.18.0.2",
+    "network.peer.port": "3306"
+   }
+  },
+  "CLIENT SELECT pilotos": {
+   "duration_ms": 0.124,
+   "attributes": {
+    "server.port": "3306",
+    "db.system.name": "mysql",
+    "server.address": "172.18.0.2",
+    "db.operation.name": "SELECT",
+    "db.collection.name": "pilotos",
+    "db.query.summary": "SELECT pilotos",
+    "network.peer.address": "172.18.0.2",
+    "network.peer.port": "3306"
+   }
+  },
+  "CLIENT SELECT equipes": {
+   "duration_ms": 0.118,
+   "attributes": {
+    "server.port": "3306",
+    "db.system.name": "mysql",
+    "server.address": "172.18.0.2",
+    "db.operation.name": "SELECT",
+    "db.collection.name": "equipes",
+    "db.query.summary": "SELECT equipes",
+    "network.peer.address": "172.18.0.2",
+    "network.peer.port": "3306"
+   }
+  },
+  "SERVER GET /home": {
+   "duration_ms": 143.907,
+   "attributes": {
+    "server.port": "9000",
+    "client.address": "127.0.0.1",
+    "server.address": "f1x-fix-obi",
+    "http.response.status_code": "200",
+    "http.request.method": "GET",
+    "url.path": "/home",
+    "http.route": "/home",
+    "network.peer.address": "127.0.0.1",
+    "network.peer.port": "34178"
+   }
+  },
+  "CLIENT GET /home": {
+   "duration_ms": 144.101,
+   "attributes": {
+    "server.port": "9000",
+    "server.address": "127.0.0.1",
+    "url.full": "/home",
+    "http.request.method": "GET",
+    "http.response.status_code": "200",
+    "url.scheme": "http",
+    "network.peer.address": "127.0.0.1",
+    "network.peer.port": "9000"
+   }
+  },
+  "SERVER GET /healthz": {
+   "duration_ms": 16440.732,
+   "attributes": {
+    "server.port": "9000",
+    "client.address": "127.0.0.1",
+    "server.address": "f1x-fix-obi",
+    "http.response.status_code": "200",
+    "http.request.method": "GET",
+    "url.path": "/healthz",
+    "http.route": "/healthz",
+    "network.peer.address": "127.0.0.1",
+    "network.peer.port": "46938"
+   }
+  },
+  "CLIENT GET /healthz": {
+   "duration_ms": 0.495,
+   "attributes": {
+    "server.port": "9000",
+    "server.address": "127.0.0.1",
+    "url.full": "/healthz",
+    "http.request.method": "GET",
+    "http.response.status_code": "200",
+    "url.scheme": "http",
+    "network.peer.address": "127.0.0.1",
+    "network.peer.port": "9000"
+   }
+  }
+ },
+ "heavy_home_trace": [
+  {
+   "name": "GET /home",
+   "kind": "SERVER",
+   "duration_ms": 880.237,
+   "port": "8080",
+   "children": [
+    {
+     "name": "in queue",
+     "kind": "INTERNAL",
+     "duration_ms": 0.035,
+     "port": null,
+     "children": []
+    },
+    {
+     "name": "processing",
+     "kind": "INTERNAL",
+     "duration_ms": 880.202,
+     "port": null,
+     "children": [
+      {
+       "name": "GET /home",
+       "kind": "CLIENT",
+       "duration_ms": 872.418,
+       "port": "9000",
+       "children": [
+        {
+         "name": "GET /home",
+         "kind": "SERVER",
+         "duration_ms": 872.314,
+         "port": "9000",
+         "children": [
+          {
+           "name": "SELECT",
+           "kind": "CLIENT",
+           "duration_ms": 0.5,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT corridas resultados",
+           "kind": "CLIENT",
+           "duration_ms": 35.385,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT equipes",
+           "kind": "CLIENT",
+           "duration_ms": 0.052,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT equipes",
+           "kind": "CLIENT",
+           "duration_ms": 0.068,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT paises",
+           "kind": "CLIENT",
+           "duration_ms": 0.056,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT piloto_equipes",
+           "kind": "CLIENT",
+           "duration_ms": 0.414,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT piloto_equipes",
+           "kind": "CLIENT",
+           "duration_ms": 5.081,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT piloto_equipes",
+           "kind": "CLIENT",
+           "duration_ms": 0.074,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT pilotos",
+           "kind": "CLIENT",
+           "duration_ms": 0.063,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT pilotos",
+           "kind": "CLIENT",
+           "duration_ms": 0.095,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT pistas",
+           "kind": "CLIENT",
+           "duration_ms": 0.089,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT resultados",
+           "kind": "CLIENT",
+           "duration_ms": 4.401,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT temporadas",
+           "kind": "CLIENT",
+           "duration_ms": 0.171,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT temporadas",
+           "kind": "CLIENT",
+           "duration_ms": 0.244,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT titulos",
+           "kind": "CLIENT",
+           "duration_ms": 0.17,
+           "port": "3306",
+           "children": []
+          },
+          {
+           "name": "SELECT users",
+           "kind": "CLIENT",
+           "duration_ms": 0.115,
+           "port": "3306",
+           "children": []
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "metrics": {
+  "http.server.request.duration": {
+   "unit": "s",
+   "type": "histogram",
+   "attributes": [
+    "http.request.method",
+    "http.response.status_code",
+    "http.route",
+    "server.address",
+    "server.port",
+    "url.scheme"
+   ]
+  },
+  "http.client.request.duration": {
+   "unit": "s",
+   "type": "histogram",
+   "attributes": [
+    "http.request.method",
+    "http.response.status_code",
+    "http.route",
+    "server.address",
+    "server.port",
+    "url.scheme"
+   ]
+  },
+  "http.server.request.body.size": {
+   "unit": "By",
+   "type": "histogram",
+   "attributes": [
+    "http.request.method",
+    "http.response.status_code",
+    "http.route",
+    "server.address",
+    "server.port",
+    "url.scheme"
+   ]
+  },
+  "http.server.response.body.size": {
+   "unit": "By",
+   "type": "histogram",
+   "attributes": [
+    "http.request.method",
+    "http.response.status_code",
+    "http.route",
+    "server.address",
+    "server.port",
+    "url.scheme"
+   ]
+  },
+  "http.client.request.body.size": {
+   "unit": "By",
+   "type": "histogram",
+   "attributes": [
+    "http.request.method",
+    "http.response.status_code",
+    "http.route",
+    "server.address",
+    "server.port",
+    "url.scheme"
+   ]
+  },
+  "http.client.response.body.size": {
+   "unit": "By",
+   "type": "histogram",
+   "attributes": [
+    "http.request.method",
+    "http.response.status_code",
+    "http.route",
+    "server.address",
+    "server.port",
+    "url.scheme"
+   ]
+  },
+  "db.client.operation.duration": {
+   "unit": "s",
+   "type": "histogram",
+   "attributes": [
+    "db.collection.name",
+    "db.operation.name",
+    "db.system.name",
+    "server.address"
+   ]
+  },
+  "dns.lookup.duration": {
+   "unit": "s",
+   "type": "histogram",
+   "attributes": []
+  }
+ }
+}

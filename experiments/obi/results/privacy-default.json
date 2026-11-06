@@ -1,0 +1,106 @@
+{
+ "scanned": {
+  "spans": 85,
+  "datapoints": 217
+ },
+ "hits": {
+  "query_string:span:url.query": {
+   "count": 9,
+   "example": "email=home-fixture%40example.test&token=REDACTED&q=privacy-plain-value"
+  },
+  "literal:span:url.query": {
+   "count": 9,
+   "example": "email=home-fixture%40example.test&token=REDACTED&q=privacy-plain-value"
+  },
+  "query_string:span:url.full": {
+   "count": 3,
+   "example": "/index.php?email=home-fixture%40example.test&token=REDACTED&q=privacy-plain-value"
+  },
+  "literal:span:url.full": {
+   "count": 3,
+   "example": "/index.php?email=home-fixture%40example.test&token=REDACTED&q=privacy-plain-value"
+  },
+  "csrf:span:url.query": {
+   "count": 3,
+   "example": "temporada_id=privacy-season-value&_token=<token-shaped value masked>"
+  },
+  "csrf:span:url.full": {
+   "count": 1,
+   "example": "/index.php?temporada_id=privacy-season-value&_token=<token-shaped value masked>"
+  },
+  "cookie:span:url.query": {
+   "count": 3,
+   "example": "remember_web=privacy-cookie-like&password=REDACTED"
+  },
+  "credential:span:url.query": {
+   "count": 3,
+   "example": "remember_web=privacy-cookie-like&password=REDACTED"
+  },
+  "cookie:span:url.full": {
+   "count": 1,
+   "example": "/index.php?remember_web=privacy-cookie-like&password=REDACTED"
+  },
+  "credential:span:url.full": {
+   "count": 1,
+   "example": "/index.php?remember_web=privacy-cookie-like&password=REDACTED"
+  }
+ },
+ "pass": false,
+ "attribute_keys": {
+  "metric:container.id": 4,
+  "metric:container.name": 4,
+  "metric:db.collection.name": 27,
+  "metric:db.operation.name": 30,
+  "metric:db.system.name": 30,
+  "metric:error.type": 18,
+  "metric:host.id": 4,
+  "metric:host.name": 4,
+  "metric:http.request.method": 180,
+  "metric:http.response.status_code": 180,
+  "metric:http.route": 180,
+  "metric:instance": 4,
+  "metric:job": 4,
+  "metric:os.type": 4,
+  "metric:server.address": 210,
+  "metric:server.port": 180,
+  "metric:service.instance.id": 4,
+  "metric:service.name": 4,
+  "metric:telemetry.distro.name": 4,
+  "metric:telemetry.distro.version": 4,
+  "metric:telemetry.sdk.language": 4,
+  "metric:telemetry.sdk.name": 4,
+  "metric:telemetry.sdk.version": 4,
+  "metric:url.scheme": 180,
+  "resource:container.id": 5,
+  "resource:container.name": 5,
+  "resource:host.id": 5,
+  "resource:host.name": 5,
+  "resource:os.type": 5,
+  "resource:otel.scope.name": 2,
+  "resource:service.instance.id": 5,
+  "resource:service.name": 5,
+  "resource:telemetry.distro.name": 5,
+  "resource:telemetry.distro.version": 5,
+  "resource:telemetry.sdk.language": 5,
+  "resource:telemetry.sdk.name": 5,
+  "resource:telemetry.sdk.version": 5,
+  "span:client.address": 14,
+  "span:db.collection.name": 44,
+  "span:db.operation.name": 50,
+  "span:db.query.summary": 47,
+  "span:db.system.name": 50,
+  "span:error.type": 2,
+  "span:http.request.method": 21,
+  "span:http.response.status_code": 21,
+  "span:http.route": 14,
+  "span:network.peer.address": 71,
+  "span:network.peer.port": 71,
+  "span:network.protocol.version": 7,
+  "span:server.address": 71,
+  "span:server.port": 71,
+  "span:url.full": 7,
+  "span:url.path": 14,
+  "span:url.query": 9,
+  "span:url.scheme": 9
+ }
+}

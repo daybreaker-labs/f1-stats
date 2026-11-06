@@ -1,0 +1,20 @@
+# obi.yaml plus the privacy settings this experiment found necessary: query strings reach
+# url.query (php-fpm span) and url.full (nginx FastCGI client span), and OBI redacts only
+# known key names, so both attributes are dropped from traces. db.query.text stays at its
+# default (off); http.route and db.query.summary keep the useful low-cardinality names.
+discovery:
+  instrument:
+    - container_name: "f1x-fix-obi"
+otel_traces_export:
+  endpoint: http://f1x-collector:4318
+  protocol: http/protobuf
+otel_metrics_export:
+  endpoint: http://f1x-collector:4318
+  protocol: http/protobuf
+  interval: 10s
+metrics:
+  features: [application]
+attributes:
+  select:
+    traces:
+      exclude: [url.query, url.full]

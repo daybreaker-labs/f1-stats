@@ -1,0 +1,85 @@
+{
+ "scanned": {
+  "spans": 85,
+  "datapoints": 128
+ },
+ "hits": {
+  "query_string:span:url.full": {
+   "count": 3,
+   "example": "/index.php?email=home-fixture%40example.test&token=REDACTED&q=privacy-plain-value"
+  },
+  "literal:span:url.full": {
+   "count": 3,
+   "example": "/index.php?email=home-fixture%40example.test&token=REDACTED&q=privacy-plain-value"
+  },
+  "csrf:span:url.full": {
+   "count": 1,
+   "example": "/index.php?temporada_id=privacy-season-value&_token=<token-shaped value masked>"
+  },
+  "cookie:span:url.full": {
+   "count": 1,
+   "example": "/index.php?remember_web=privacy-cookie-like&password=REDACTED"
+  },
+  "credential:span:url.full": {
+   "count": 1,
+   "example": "/index.php?remember_web=privacy-cookie-like&password=REDACTED"
+  }
+ },
+ "pass": false,
+ "attribute_keys": {
+  "metric:container.id": 4,
+  "metric:container.name": 4,
+  "metric:db.collection.name": 18,
+  "metric:db.operation.name": 20,
+  "metric:db.system.name": 20,
+  "metric:error.type": 12,
+  "metric:host.id": 4,
+  "metric:host.name": 4,
+  "metric:http.request.method": 102,
+  "metric:http.response.status_code": 102,
+  "metric:http.route": 102,
+  "metric:instance": 4,
+  "metric:job": 4,
+  "metric:os.type": 4,
+  "metric:server.address": 122,
+  "metric:server.port": 102,
+  "metric:service.instance.id": 4,
+  "metric:service.name": 4,
+  "metric:telemetry.distro.name": 4,
+  "metric:telemetry.distro.version": 4,
+  "metric:telemetry.sdk.language": 4,
+  "metric:telemetry.sdk.name": 4,
+  "metric:telemetry.sdk.version": 4,
+  "metric:url.scheme": 102,
+  "resource:container.id": 4,
+  "resource:container.name": 4,
+  "resource:host.id": 4,
+  "resource:host.name": 4,
+  "resource:os.type": 4,
+  "resource:otel.scope.name": 2,
+  "resource:service.instance.id": 4,
+  "resource:service.name": 4,
+  "resource:telemetry.distro.name": 4,
+  "resource:telemetry.distro.version": 4,
+  "resource:telemetry.sdk.language": 4,
+  "resource:telemetry.sdk.name": 4,
+  "resource:telemetry.sdk.version": 4,
+  "span:client.address": 14,
+  "span:db.collection.name": 44,
+  "span:db.operation.name": 50,
+  "span:db.query.summary": 47,
+  "span:db.system.name": 50,
+  "span:error.type": 2,
+  "span:http.request.method": 21,
+  "span:http.response.status_code": 21,
+  "span:http.route": 14,
+  "span:network.peer.address": 71,
+  "span:network.peer.port": 71,
+  "span:network.protocol.version": 7,
+  "span:server.address": 71,
+  "span:server.port": 71,
+  "span:url.full": 7,
+  "span:url.path": 14,
+  "span:url.scheme": 9
+ }
+}

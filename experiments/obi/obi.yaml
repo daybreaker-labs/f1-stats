@@ -1,0 +1,15 @@
+# OBI v1.0.0 (config v1) for the offline F1 Stats run. Only the `f1x-fix-obi` container is
+# selected; its twin `f1x-fix-baseline` runs the same image and must stay uninstrumented.
+# Container names come from the Docker API, so the OBI container mounts the Docker socket.
+discovery:
+  instrument:
+    - container_name: "f1x-fix-obi"
+otel_traces_export:
+  endpoint: http://f1x-collector:4318
+  protocol: http/protobuf
+otel_metrics_export:
+  endpoint: http://f1x-collector:4318
+  protocol: http/protobuf
+  interval: 10s
+metrics:
+  features: [application]

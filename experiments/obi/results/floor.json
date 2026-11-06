@@ -1,0 +1,140 @@
+{
+ "mode": "floor",
+ "at": "2026-11-06T12:59:40Z",
+ "result": {
+  "baseline": {
+   "n": 10,
+   "cpu_median": 23.2945,
+   "ms_median": 0.3635,
+   "all_200": true
+  },
+  "obi": {
+   "n": 10,
+   "cpu_median": 23.859,
+   "ms_median": 0.5589999999999999,
+   "all_200": true
+  },
+  "rows": [
+   {
+    "variant": "baseline",
+    "ms": 0.571,
+    "status": 200,
+    "cpu_ms": 19.092
+   },
+   {
+    "variant": "obi",
+    "ms": 1.4749999999999999,
+    "status": 200,
+    "cpu_ms": 25.471
+   },
+   {
+    "variant": "obi",
+    "ms": 1.063,
+    "status": 200,
+    "cpu_ms": 24.584
+   },
+   {
+    "variant": "baseline",
+    "ms": 0.431,
+    "status": 200,
+    "cpu_ms": 23.252
+   },
+   {
+    "variant": "baseline",
+    "ms": 0.388,
+    "status": 200,
+    "cpu_ms": 25.21
+   },
+   {
+    "variant": "obi",
+    "ms": 0.703,
+    "status": 200,
+    "cpu_ms": 25.288
+   },
+   {
+    "variant": "obi",
+    "ms": 0.6849999999999999,
+    "status": 200,
+    "cpu_ms": 24.15
+   },
+   {
+    "variant": "baseline",
+    "ms": 0.368,
+    "status": 200,
+    "cpu_ms": 23.322
+   },
+   {
+    "variant": "baseline",
+    "ms": 0.337,
+    "status": 200,
+    "cpu_ms": 22.061
+   },
+   {
+    "variant": "obi",
+    "ms": 0.5670000000000001,
+    "status": 200,
+    "cpu_ms": 22.915
+   },
+   {
+    "variant": "obi",
+    "ms": 0.5419999999999999,
+    "status": 200,
+    "cpu_ms": 23.568
+   },
+   {
+    "variant": "baseline",
+    "ms": 0.359,
+    "status": 200,
+    "cpu_ms": 25.074
+   },
+   {
+    "variant": "baseline",
+    "ms": 0.34400000000000003,
+    "status": 200,
+    "cpu_ms": 24.18
+   },
+   {
+    "variant": "obi",
+    "ms": 0.5509999999999999,
+    "status": 200,
+    "cpu_ms": 22.346
+   },
+   {
+    "variant": "obi",
+    "ms": 0.512,
+    "status": 200,
+    "cpu_ms": 24.801
+   },
+   {
+    "variant": "baseline",
+    "ms": 0.33,
+    "status": 200,
+    "cpu_ms": 23.267
+   },
+   {
+    "variant": "baseline",
+    "ms": 0.339,
+    "status": 200,
+    "cpu_ms": 20.133
+   },
+   {
+    "variant": "obi",
+    "ms": 0.502,
+    "status": 200,
+    "cpu_ms": 22.411
+   },
+   {
+    "variant": "obi",
+    "ms": 0.484,
+    "status": 200,
+    "cpu_ms": 23.291
+   },
+   {
+    "variant": "baseline",
+    "ms": 0.376,
+    "status": 200,
+    "cpu_ms": 32.238
+   }
+  ]
+ }
+}

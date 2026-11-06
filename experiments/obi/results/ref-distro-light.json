@@ -1,0 +1,221 @@
+{
+ "shape": "light",
+ "summary": {
+  "baseline": {
+   "obi_cpu_median": 0.0,
+   "n": 8,
+   "median": 131.7265,
+   "p95": 143.255,
+   "cpu_median": 94.28,
+   "cpu_p95": 97.998,
+   "throttled": 0,
+   "p95_excl_pair0": 143.255,
+   "identical": true,
+   "all_200": true,
+   "median_overhead_pct": 0.0,
+   "p95_overhead_pct": 0.0,
+   "cpu_median_overhead_pct": 0.0,
+   "cpu_p95_overhead_pct": 0.0,
+   "paired_median_overhead_pct": 0.0
+  },
+  "distro": {
+   "obi_cpu_median": 0.0,
+   "n": 8,
+   "median": 141.488,
+   "p95": 153.38299999999998,
+   "cpu_median": 107.22149999999999,
+   "cpu_p95": 115.527,
+   "throttled": 0,
+   "p95_excl_pair0": 153.38299999999998,
+   "identical": true,
+   "all_200": true,
+   "median_overhead_pct": 7.410429943860963,
+   "p95_overhead_pct": 7.069910299815008,
+   "cpu_median_overhead_pct": 13.72666525243953,
+   "cpu_p95_overhead_pct": 17.887099736729304,
+   "paired_median_overhead_pct": 7.097338819391529
+  }
+ },
+ "obi_memory": {},
+ "started": "2026-11-06T13:00:58Z",
+ "finished": "2026-11-06T13:01:22Z",
+ "rows": [
+  {
+   "pair": 0,
+   "variant": "baseline",
+   "ms": 133.536,
+   "cpu_ms": 97.125,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": true,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 0,
+   "variant": "distro",
+   "ms": 142.894,
+   "cpu_ms": 107.23,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": true,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 1,
+   "variant": "distro",
+   "ms": 141.766,
+   "cpu_ms": 107.86,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 1,
+   "variant": "baseline",
+   "ms": 135.633,
+   "cpu_ms": 97.998,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 2,
+   "variant": "baseline",
+   "ms": 129.03500000000003,
+   "cpu_ms": 94.123,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 2,
+   "variant": "distro",
+   "ms": 141.21,
+   "cpu_ms": 107.357,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 3,
+   "variant": "distro",
+   "ms": 140.50099999999998,
+   "cpu_ms": 107.213,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 3,
+   "variant": "baseline",
+   "ms": 129.476,
+   "cpu_ms": 92.917,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 4,
+   "variant": "baseline",
+   "ms": 131.09199999999998,
+   "cpu_ms": 94.251,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 4,
+   "variant": "distro",
+   "ms": 140.432,
+   "cpu_ms": 104.176,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 5,
+   "variant": "distro",
+   "ms": 139.607,
+   "cpu_ms": 100.971,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 5,
+   "variant": "baseline",
+   "ms": 132.36100000000002,
+   "cpu_ms": 95.972,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 6,
+   "variant": "baseline",
+   "ms": 143.255,
+   "cpu_ms": 93.487,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 6,
+   "variant": "distro",
+   "ms": 153.38299999999998,
+   "cpu_ms": 115.527,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 7,
+   "variant": "distro",
+   "ms": 141.97299999999998,
+   "cpu_ms": 106.972,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  },
+  {
+   "pair": 7,
+   "variant": "baseline",
+   "ms": 130.113,
+   "cpu_ms": 94.309,
+   "obi_cpu_ms": 0.0,
+   "throttled": 0,
+   "status": 200,
+   "sampled_id": false,
+   "hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+  }
+ ],
+ "baseline_hash": "f1625e71de206255526e3c204151879f34b4b38b6e0ad344bd49855517f04ba2"
+}

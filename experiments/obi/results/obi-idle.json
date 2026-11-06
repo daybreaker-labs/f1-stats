@@ -1,0 +1,12 @@
+{
+ "mode": "idle",
+ "at": "2026-11-06T12:54:24Z",
+ "result": {
+  "seconds": 60.03917193412781,
+  "obi_cpu_ms": 507.954,
+  "obi_cpu_ms_per_s": 8.4603765114766,
+  "memory_current_bytes": 271269888,
+  "anon_bytes": 31641600,
+  "kernel_bytes": 200671232
+ }
+}
