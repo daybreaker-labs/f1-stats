@@ -112,12 +112,13 @@
 	# nginx's "try_files $uri $uri/" answers an existing directory itself: a
 	# redirect to the slash form, or 403 where it holds no index.php (autoindex
 	# is off). A directory that does hold one falls through to Laravel's 404.
-	# A "/" suffix in try_files and the file matcher only matches directories:
+	# A try_files entry ending in "/" matches directories only, judged on the
+	# entry as written, so "{path}/" is needed even where the path ends in "/":
 	# https://caddyserver.com/docs/caddyfile/matchers#file
 	@dirslash {
 		path */
 		file {
-			try_files {path}
+			try_files {path}/
 		}
 		not file {
 			try_files {path}index.php
