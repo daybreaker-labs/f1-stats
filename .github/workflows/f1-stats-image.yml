@@ -149,6 +149,13 @@ jobs:
           UPSTREAM_SHA: ${{ needs.resolve.outputs.upstream_sha }}
         run: test "$(git -C upstream rev-parse HEAD)" = "$UPSTREAM_SHA"
 
+      # Runner teardown lists registry-tagged images retained in the Docker cache.
+      - name: Mask registry account in command output
+        run: |
+          image=$(PYTHONPATH=stack/scripts python3 -c 'from f1_stats_release import REGISTRY_IMAGE; print(REGISTRY_IMAGE)')
+          registry_path="${image#*/}"
+          echo "::add-mask::${registry_path%%/*}"
+
       - name: Set up Blacksmith builder
         uses: useblacksmith/setup-docker-builder@19215110ab936351210feebdfa5b440b4493e184 # v2.2.0
         with:

@@ -263,6 +263,24 @@ class WorkflowGuards(unittest.TestCase):
             self.assertEqual(result.stdout, f"::add-mask::{namespace}\n")
             self.assertEqual(output.read_text(), f"IMAGE={release.REGISTRY_IMAGE}\n")
 
+    def test_build_masks_registry_account_before_builder_setup(self):
+        build = re.search(r"(?ms)^  build:\n.*?(?=^  \S|\Z)", self.workflow).group()
+        mask = build.index("      - name: Mask registry account in command output\n")
+        self.assertLess(mask, build.index("      - name: Set up Blacksmith builder\n"))
+        section = build[mask:]
+        program = textwrap.dedent(section.split("        run: |\n", 1)[1].split("\n      - ", 1)[0])
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / "stack").symlink_to(Path(__file__).resolve().parents[2], target_is_directory=True)
+            result = subprocess.run(
+                ["bash", "-euo", "pipefail", "-c", program],
+                cwd=directory,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0)
+            self.assertTrue(result.stdout == f"::add-mask::{release.REGISTRY_IMAGE.split('/')[1]}\n")
+
     def test_auto_dispatch_reads_the_deployed_release(self):
         self.assertIn("if: github.event_name == 'schedule' || inputs.auto", self.workflow)
 
