@@ -319,13 +319,14 @@ class WorkflowGuards(unittest.TestCase):
             self.assertEqual((root / "output").read_text(), "digest=" + NEW + "\n")
             self.assertNotIn("frsgxpf5mpny", result.stdout + (root / "summary").read_text())
 
-    def test_release_jobs_use_managed_runner_routing(self):
+    def test_only_build_uses_managed_runner_routing(self):
         for job in ["resolve", "build", "publish", "promote", "verify", "report"]:
             section = re.search(rf"(?ms)^  {job}:\n.*?(?=^  \S|\Z)", self.workflow).group()
-            variable = "CI_LARGE_RUNNER" if job == "build" else "CI_RUNNER"
-            self.assertIn("    runs-on: ${{ vars." + variable + " || 'ubuntu-24.04-arm' }}\n", section)
             if job == "build":
+                self.assertIn("    runs-on: ${{ vars.CI_LARGE_RUNNER || 'ubuntu-24.04-arm' }}\n", section)
                 self.assertIn("nofallback: ${{ startsWith(vars.CI_LARGE_RUNNER, 'blacksmith-') }}", section)
+            else:
+                self.assertIn("    runs-on: ubuntu-24.04-arm\n", section)
 
     def test_credentials_are_main_environment_only_and_absent_from_build(self):
         for job in ["resolve", "publish", "promote", "report"]:
