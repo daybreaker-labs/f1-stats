@@ -49,6 +49,8 @@ settings, environment policy, App installations and credential custody separatel
 
 ## Checks
 
+The report receiver tests require PHP CLI (8.4 or newer) in addition to Python.
+
 ```sh
 python3 -m unittest discover -s scripts/tests
 actionlint
@@ -56,5 +58,34 @@ GH_TOKEN=<read-only-token> zizmor --persona=regular .
 ```
 
 CI installs checksum-verified actionlint 1.7.12 and zizmor 1.30.1 and reports the required `check` job for pull requests and `main`. These tests exercise release decisions, immutable publication, promotion guards and commit status links without cloud credentials. The real build, registry publication and live deployment run through the release workflow.
+
+## Browser security headers
+
+nginx sends `Strict-Transport-Security: max-age=300` on application responses.
+The initial five-minute policy excludes subdomains and preload. After three days
+of HTTPS and certificate checks, review a change to `86400`; after a further week,
+review `2592000`. Each increase needs an explicit decision and a separate change.
+Rollback uses `max-age=0` over HTTPS; browsers retain an existing policy until
+they receive that response or its previous lifetime expires.
+
+The CSP remains report-only. It allows the observed CDN hosts, reports inline
+scripts, and keeps inline styles working. Enforcement requires a separate decision
+after reviewing real traffic and checking authenticated pages. `/healthz` keeps
+its separate revision headers and does not carry the browser policies.
+
+Browsers POST legacy `application/csp-report` JSON to `/_csp/report`. The image's
+small PHP receiver bypasses Laravel and MySQL, returning 204 after writing one
+`csp_violation` JSON event to stderr. The existing Kubernetes log collector sends
+those events to Datadog and Bronto; search F1 Stats container logs for
+`csp_violation`, then group by `directive` and `blocked_origin`. Retained fields
+are origins, directive, and line/column numbers. URL paths and queries, referrers,
+script samples, cookies, and unknown fields are discarded.
+
+Treat reports as untrusted observations, since anyone can submit one. nginx caps
+requests at 16 KiB and one per second per pod, allowing a burst of 20. Excess
+reports return 429, so counts are a sample during bursts. Use `report-uri` for
+browser compatibility; adopting Reporting API batches is a future change.
+Verify live headers and a synthetic report after release, then review violations
+from three days of real traffic before closing the rollout.
 
 Use a [Linear work item](https://linear.app/daybreaker-labs) in pull requests. Keep private operations and credentials in their owning systems; review workflow output before making it public.

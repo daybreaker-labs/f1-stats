@@ -186,6 +186,16 @@ jobs:
           done
           status=$(docker exec f1-stats-smoke curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/users/login || true)
           revision=$(docker exec f1-stats-smoke curl -sI http://127.0.0.1:8080/healthz | tr -d '\r' | sed -n 's/^[Xx]-[Ff]1-[Rr]evision: //p' || true)
+          headers=$(docker exec f1-stats-smoke curl -fsSI http://127.0.0.1:8080/users/login | tr -d '\r')
+          grep -Fx 'Strict-Transport-Security: max-age=300' <<< "$headers"
+          grep -E '^Content-Security-Policy-Report-Only: .*report-uri /_csp/report$' <<< "$headers"
+          if grep -q '^Content-Security-Policy:' <<< "$headers"; then exit 1; fi
+          report_status=$(docker exec f1-stats-smoke curl -s -o /dev/null -w '%{http_code}' \
+            -H 'Content-Type: application/csp-report' \
+            --data '{"csp-report":{"document-uri":"https://example.invalid/private?token=discard","effective-directive":"script-src-elem","blocked-uri":"inline"}}' \
+            http://127.0.0.1:8080/_csp/report)
+          test "$report_status" = 204
+          docker logs f1-stats-smoke 2>&1 | grep -F '"event":"csp_violation"'
           docker logs f1-stats-smoke
           docker rm -f f1-stats-smoke > /dev/null
           test "$ok" = 1

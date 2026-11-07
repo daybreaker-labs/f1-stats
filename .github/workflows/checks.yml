@@ -17,7 +17,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Test release programs
-        run: python3 -m unittest discover -s scripts/tests
+        run: |
+          php --version
+          python3 -m unittest discover -s scripts/tests
       - name: Install pinned workflow linters
         run: |
           tools="$RUNNER_TEMP/workflow-linters"

@@ -44,6 +44,7 @@ RUN rm -f /etc/apt/sources.list /etc/apt/sources.list.d/* \
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY php.ini /usr/local/etc/php/conf.d/zz-f1-stats.ini
 COPY php-fpm.conf /usr/local/etc/php-fpm.d/zz-f1-stats.conf
+COPY csp-report.php /usr/local/lib/f1-stats/csp-report.php
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/f1-stats-entrypoint
 
 FROM runtime AS build
