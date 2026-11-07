@@ -61,7 +61,7 @@ jobs:
   resolve:
     environment: release
     if: (github.event_name == 'workflow_dispatch' && !inputs.auto) || vars.F1_STATS_AUTO_DEPLOY == 'true'
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 5
     outputs:
       run: ${{ steps.decide.outputs.run }}
@@ -256,7 +256,7 @@ jobs:
       needs.resolve.outputs.publish == 'true' && github.ref == 'refs/heads/main' &&
       github.repository == 'daybreaker-labs/f1-stats'
     needs: [resolve, build]
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 15
     outputs:
       digest: ${{ steps.publish.outputs.digest }}
@@ -386,7 +386,7 @@ jobs:
     environment: release
     needs: [resolve, publish]
     if: needs.resolve.outputs.deploy == 'true'
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 25
     steps:
       - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
@@ -416,7 +416,7 @@ jobs:
 
   verify:
     needs: [resolve, promote]
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 20
     steps:
       - uses: useblacksmith/checkout@2b9fe87d796feea153b455ec2f3125b471a7b0e7 # v1.8.2
@@ -435,7 +435,7 @@ jobs:
     environment: release
     needs: [resolve, build, publish, promote, verify]
     if: always() && needs.resolve.outputs.deploy == 'true'
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     timeout-minutes: 5
     env:
       UPSTREAM_SHA: ${{ needs.resolve.outputs.upstream_sha }}
