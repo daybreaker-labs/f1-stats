@@ -15,7 +15,7 @@ FROM docker.io/library/composer:2.11.1@sha256:8de2184c6de224f4689e8f80ed5f5edaf0
 
 # PHP 8.4 runs past Laravel 13's security support. 8.5 is not usable yet: the
 # PhpSpreadsheet 1.x that maatwebsite/excel 3.1 requires declares <8.5.
-FROM docker.io/library/php:8.4-fpm-trixie@sha256:3a6527017daca7917709afa08a37388ec108db093857f31d642cfff2e6f0449e AS runtime
+FROM docker.io/library/php:8.4-fpm-trixie@sha256:212c3c9fc09d58f6b1a12b0b4a6a90fd44a209299a67633c2bccbc1dd53c55e0 AS runtime
 COPY apt.conf /etc/apt/apt.conf.d/80-f1-build
 # Runtime installs precede application copies so the persistent arm64 builder
 # can reuse them across upstream releases.
