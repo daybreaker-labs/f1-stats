@@ -3,6 +3,20 @@
   "extends": ["config:recommended"],
   "automerge": false,
   "packageRules": [
-    {"matchManagers": ["github-actions"], "pinDigests": true}
+    {"matchManagers": ["github-actions"], "pinDigests": true},
+    {
+      "matchManagers": ["dockerfile"],
+      "matchDepTypes": ["stage", "final"],
+      "matchFileNames": ["images/f1-stats/**"],
+      "matchUpdateTypes": ["digest", "patch", "minor"],
+      "groupName": "f1-stats base images"
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "matchFileNames": ["images/f1-stats/**"],
+      "matchPackageNames": ["docker.io/library/php"],
+      "matchUpdateTypes": ["minor"],
+      "groupName": null
+    }
   ]
 }
