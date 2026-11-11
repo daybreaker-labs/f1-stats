@@ -11,7 +11,7 @@
 # One container runs nginx and php-fpm under entrypoint.sh: nginx needs the
 # same public/ tree php-fpm serves, and a single process tree gives Traefik one
 # port and the probes one path through both servers.
-FROM docker.io/library/composer:2.11.1@sha256:8de2184c6de224f4689e8f80ed5f5edaf0030b6b8b7839a22a2bcb6722ac87d0 AS composer
+FROM docker.io/library/composer:2.11.2@sha256:5bcb28b8d0edc4091125f8218f9d088f998bdfc843f8fbb9a4beb4dcd8625684 AS composer
 
 # PHP 8.4 runs past Laravel 13's security support. 8.5 is not usable yet: the
 # PhpSpreadsheet 1.x that maatwebsite/excel 3.1 requires declares <8.5.
