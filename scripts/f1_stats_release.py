@@ -31,7 +31,6 @@ if TYPE_CHECKING:
 GITOPS_REPO = "daybreaker-labs/daybreaker-gitops"
 DEPLOYMENT_PATH = "components/f1-stats/base/deployment.yaml"
 MIGRATE_PATH = "components/f1-stats/base/migrate-job.yaml"
-# Where each manifest pins the image, so an unexpected layout stops the release.
 EXPECTED_IMAGE_PINS = {DEPLOYMENT_PATH: 2, MIGRATE_PATH: 1}
 
 STATUS_CONTEXT = "daybreaker/f1-stats-release"
@@ -48,9 +47,7 @@ DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 SUFFIX_RE = re.compile(r"^-[a-z0-9][a-z0-9.]{0,15}$")
 
 USER_AGENT = "daybreaker-f1-stats-release"
-# Actions write cannot be limited to one input, and several Apps in this
-# organization hold it, so any App identity may only dispatch auto. The OKE
-# CronJob is the one that does, as daybreaker-renovate-dispatch[bot].
+# Actions write cannot be limited to one dispatch input.
 BOT_SUFFIX = "[bot]"
 
 
@@ -270,7 +267,7 @@ def resolve() -> None:
             ref=ref,
         )
     if event == "workflow_dispatch" and not auto:
-        # A re-run keeps the original actor, so the one who re-ran counts too.
+        # GitHub preserves the original actor on a re-run.
         actors = (env("GITHUB_ACTOR", ""), env("GITHUB_TRIGGERING_ACTOR", ""))
         if any(actor.endswith(BOT_SUFFIX) for actor in actors):
             raise ReleaseError("an App identity may only dispatch auto")
@@ -327,7 +324,6 @@ def promote() -> None:
     for path in EXPECTED_IMAGE_PINS:
         text, blob = fetch_file(GITOPS_REPO, path, token, base)
         updated = rewrite_manifest(path, text, digest, upstream_sha, packaging_sha)
-        # Commits made through this API are signed by GitHub for the App.
         github(
             f"repos/{GITOPS_REPO}/contents/{path}",
             token,
@@ -367,7 +363,7 @@ def promote() -> None:
 
 
 def public_response(path: str) -> tuple[int, Message | dict[str, str], bytes]:
-    # The query keeps Cloudflare from answering with a copy from an earlier run.
+    # Cloudflare may serve a cached response from an earlier run.
     url = f"{PUBLIC_URL}{path}?release={env('GITHUB_RUN_ID')}"
     try:
         return request(url)
@@ -484,7 +480,7 @@ def main(argv: list[str]) -> int:
         print(f"error: {error}", file=sys.stderr)
         return 1
     except urllib.error.HTTPError as error:
-        # The response body can echo request details, so only the code is shown.
+        # HTTP response bodies can echo private request details.
         print(f"error: HTTP request returned {error.code}", file=sys.stderr)
         return 1
     return 0
