@@ -80,7 +80,7 @@ jobs:
       - name: Read the deployed release
         id: gitops-token
         if: github.event_name == 'schedule' || inputs.auto
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         with:
           client-id: ${{ secrets.F1_DEPLOY_APP_ID }}
           private-key: ${{ secrets.F1_DEPLOY_APP_PRIVATE_KEY }}
@@ -102,7 +102,7 @@ jobs:
       - name: Mint the status token
         id: status-token
         if: steps.decide.outputs.deploy == 'true'
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         with:
           client-id: ${{ secrets.F1_STATUS_APP_ID }}
           private-key: ${{ secrets.F1_STATUS_APP_PRIVATE_KEY }}
@@ -406,7 +406,7 @@ jobs:
         with:
           python-version: '3.15.2'
       - id: gitops-token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         with:
           client-id: ${{ secrets.F1_DEPLOY_APP_ID }}
           private-key: ${{ secrets.F1_DEPLOY_APP_PRIVATE_KEY }}
@@ -459,7 +459,7 @@ jobs:
         with:
           python-version: '3.15.2'
       - id: status-token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         with:
           client-id: ${{ secrets.F1_STATUS_APP_ID }}
           private-key: ${{ secrets.F1_STATUS_APP_PRIVATE_KEY }}
